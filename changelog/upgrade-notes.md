@@ -20,7 +20,7 @@ Inserting with `setAt` or `insertAt` beyond the current length used to create a 
 
 #### ol/control/MousePosition
 
-The control will now by default keep displaying the last mouse position when the mouse leaves the viewport.  With `placeholder: '&#160;'` you can keep the old behaviour.  The `placeholder` option no longer accepts `false` as a valid value, instead simply omit the option.  The `undefinedHTML` option has been removed. You should use `placeholder` instead.
+The control will now by default keep displaying the last mouse position when the mouse leaves the viewport.  With `placeholder: '&#160;'` you can keep the old behavior.  The `placeholder` option no longer accepts `false` as a valid value, instead simply omit the option.  The `undefinedHTML` option has been removed. You should use `placeholder` instead.
 
 #### ol/PluggableMap
 
