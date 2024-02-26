@@ -17,6 +17,7 @@ import {
   rgbaToLcha,
   withAlpha,
 } from '../color.js';
+import Point from '../geom/Point.js';
 
 /**
  * @fileoverview This module includes functions to build expressions for evaluation on the CPU.
@@ -82,6 +83,11 @@ export function newEvaluationContext() {
 
 /**
  * @typedef {function(EvaluationContext):(Array<number>|number)} SizeLikeEvaluator
+ */
+
+/**
+ * FIXME: return a serializable value
+ * @typedef {function(EvaluationContext):(import('../geom/SimpleGeometry.js').default)} GeometryEvaluator
  */
 
 /**
@@ -184,6 +190,21 @@ function compileExpression(expression, context) {
     case Ops.Interpolate: {
       return compileInterpolateExpression(expression, context);
     }
+    case Ops.FirstPoint: {
+      return (context) => {
+        // FIXME: return a serializable value
+        return [new Point(context.properties.geometry.getFirstCoordinate())];
+      }
+    }
+    case Ops.FirstLastPoint: {
+      return (context) => {
+        // FIXME: return a serializable value
+        // FIXME: add '$orientation' to the context
+        const geometry = context.properties.geometry;
+        return [new Point(geometry.getFirstCoordinate()), new Point(geometry.getLastCoordinate())];
+      }
+    }
+
     default: {
       throw new Error(`Unsupported operator ${operator}`);
     }

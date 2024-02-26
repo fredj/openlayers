@@ -10,6 +10,7 @@ import Stroke from '../../style/Stroke.js';
 import Style from '../../style/Style.js';
 import Text from '../../style/Text.js';
 import {
+  AnyType,
   BooleanType,
   ColorType,
   NumberArrayType,
@@ -134,7 +135,10 @@ export function flatStylesToStyleFunction(flatStyles) {
     let nonNullCount = 0;
     for (let i = 0; i < length; ++i) {
       const style = evaluators[i](evaluationContext);
-      if (style) {
+      if (Array.isArray(style)) {
+        styles.splice(nonNullCount, 0, ...style);
+        nonNullCount += style.length;
+      } else if (style) {
         styles[nonNullCount] = style;
         nonNullCount += 1;
       }
@@ -236,6 +240,7 @@ export function buildStyle(flatStyle, context) {
   const evaluateText = buildText(flatStyle, context);
   const evaluateImage = buildImage(flatStyle, context);
   const evaluateZIndex = numberEvaluator(flatStyle, 'z-index', context);
+  const evaluateGeometry = buildGeometry(flatStyle, context);
 
   if (
     !evaluateFill &&
@@ -288,6 +293,18 @@ export function buildStyle(flatStyle, context) {
     }
     if (empty) {
       return null;
+    }
+
+    if (evaluateGeometry) {
+      const geometries = evaluateGeometry(context);
+      const length = geometries.length;
+      const styles = new Array(length);
+      for (let i = 0; i < length; ++i) {
+        const clone = style.clone();
+        clone.setGeometry(geometries[i]);
+        styles[i] = clone;
+      }
+      return styles;
     }
     return style;
   };
@@ -1108,6 +1125,21 @@ function sizeLikeEvaluator(flatStyle, name, context) {
   );
   return function (context) {
     return requireSizeLike(evaluator(context), name);
+  };
+}
+
+/**
+ * @param {FlatStyle} flatStyle The flat style.
+ * @param {ParsingContext} context The parsing context.
+ * @return {import('../../expr/cpu.js').GeometryEvaluator?} The expression evaluator.
+ */
+function buildGeometry(flatStyle, context) {
+  if (!('geometry' in flatStyle)) {
+    return null;
+  }
+  const evaluator = buildExpression(flatStyle['geometry'], AnyType, context);
+  return function (context) {
+    return evaluator(context);
   };
 }
 

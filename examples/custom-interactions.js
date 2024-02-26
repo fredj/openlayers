@@ -142,7 +142,7 @@ const map = new Map({
       source: new VectorSource({
         features: [pointFeature, lineFeature, polygonFeature],
       }),
-      style: {
+      style: [{
         'icon-src': 'data/icon.png',
         'icon-opacity': 0.95,
         'icon-anchor': [0.5, 46],
@@ -151,7 +151,11 @@ const map = new Map({
         'stroke-width': 3,
         'stroke-color': [255, 0, 0, 1],
         'fill-color': [0, 0, 255, 0.6],
-      },
+      }, {
+        'geometry': ['first-last-point'],
+        'circle-radius': 12,
+        'circle-fill-color': [255, 0, 0, 1],
+      }],
     }),
   ],
   target: 'map',

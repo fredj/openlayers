@@ -369,6 +369,8 @@ export const Ops = {
   Id: 'id',
   Band: 'band',
   Palette: 'palette',
+  FirstPoint: 'first-point',
+  FirstLastPoint: 'first-last-point',
 };
 
 /**
@@ -629,6 +631,8 @@ const parsers = {
     parseArgsOfType(NumberType),
   ),
   [Ops.Palette]: createParser(ColorType, withArgsCount(2, 2), parsePaletteArgs),
+  [Ops.FirstPoint]: createParser(AnyType, withNoArgs),
+  [Ops.FirstLastPoint]: createParser(AnyType, withNoArgs),
 };
 
 /**

@@ -86,7 +86,7 @@
  * can be called with an object literal that has fill, stroke, text, icon, regular shape, and/or circle properties.
  * @api
  *
- * @typedef {FlatFill & FlatStroke & FlatText & FlatIcon & FlatShape & FlatCircle} FlatStyle
+ * @typedef {FlatFill & FlatStroke & FlatText & FlatIcon & FlatShape & FlatCircle & FlatGeometry} FlatStyle
  */
 
 /**
@@ -258,6 +258,11 @@
  * (meaningful only when used in conjunction with a two dimensional scale).
  * @property {import("./Style.js").DeclutterMode} [circle-declutter-mode] Declutter mode
  * @property {NumberExpression} [z-index] The zIndex of the style.
+ */
+
+/**
+ * @typedef {Object} FlatGeometry
+ * @property {any} [geometry]
  */
 
 /**
