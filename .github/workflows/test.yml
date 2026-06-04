@@ -10,6 +10,7 @@ on:
 
 env:
   CI: true
+  PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
 
 permissions:
   contents: read
