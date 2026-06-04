@@ -7,6 +7,7 @@ import {listen, unlistenByKey} from '../../events.js';
 import {buffer, createEmpty, equals} from '../../extent.js';
 import BaseVector from '../../layer/BaseVector.js';
 import {
+  fromUserExtent,
   getTransformFromProjections,
   getUserProjection,
   toUserExtent,
@@ -19,20 +20,23 @@ import VectorEventType from '../../source/VectorEventType.js';
 import {
   apply as applyTransform,
   create as createTransform,
+  makeInverse as makeInverseTransform,
   translate as translateTransform,
 } from '../../transform.js';
 import {DefaultUniform} from '../../webgl/Helper.js';
 import WebGLRenderTarget from '../../webgl/RenderTarget.js';
 import WebGLLayerRenderer from './Layer.js';
 import {VectorUniforms, applyVectorUniforms} from './vectorUtil.js';
-import {getWorldParameters} from './worldUtil.js';
+import {getWorldParameters, transformExtent2D} from './worldUtil.js';
 
 export const Uniforms = {
   ...DefaultUniform,
   ...VectorUniforms,
-  RENDER_EXTENT: 'u_renderExtent', // intersection of layer, source, and view extent
+  RENDER_EXTENT: 'u_renderExtent', // layer extent, in the local coordinate space of the geometry buffers
   GLOBAL_ALPHA: 'u_globalAlpha',
 };
+
+const tmpTransform_ = createTransform();
 
 /**
  * @typedef {import('../../render/webgl/VectorStyleRenderer.js').StyleShaders} StyleShaders
@@ -146,6 +150,15 @@ class WebGLVectorLayerRenderer extends WebGLLayerRenderer {
      * @private
      */
     this.buffers_ = null;
+
+    /**
+     * Layer render extent, expressed in the local coordinate space of the
+     * geometry buffers and passed to the shaders as the `u_renderExtent`
+     * uniform. A zero-width extent means no clipping. Recomputed once per frame.
+     * @type {import("../../extent.js").Extent}
+     * @private
+     */
+    this.renderExtent_ = [0, 0, 0, 0];
 
     this.applyOptions_(options);
 
@@ -306,6 +319,38 @@ class WebGLVectorLayerRenderer extends WebGLLayerRenderer {
       batchInvertTransform,
       frameState,
     );
+
+    this.helper.setUniformFloatVec4(Uniforms.RENDER_EXTENT, this.renderExtent_);
+  }
+
+  /**
+   * Recomputes `this.renderExtent_` (the `u_renderExtent` uniform) for the
+   * current frame. The layer extent is converted into the local coordinate
+   * space of the geometry buffers; a zero-width extent disables clipping in
+   * the shaders. This is constant across world copies, so it is computed once
+   * per frame rather than per draw call.
+   * @param {import("../../transform.js").Transform} batchInvertTransform Inverse of the transformation in which geometries are expressed
+   * @param {import("../../Map.js").FrameState} frameState Frame state.
+   * @private
+   */
+  updateRenderExtent_(batchInvertTransform, frameState) {
+    const layerState = frameState.layerStatesArray[frameState.layerIndex];
+    if (!layerState.extent) {
+      this.renderExtent_[0] = 0;
+      this.renderExtent_[1] = 0;
+      this.renderExtent_[2] = 0;
+      this.renderExtent_[3] = 0;
+      return;
+    }
+    const extent = fromUserExtent(
+      layerState.extent,
+      frameState.viewState.projection,
+    );
+    const worldToLocalTransform = makeInverseTransform(
+      tmpTransform_,
+      batchInvertTransform,
+    );
+    transformExtent2D(extent, worldToLocalTransform, this.renderExtent_);
   }
 
   /**
@@ -317,6 +362,13 @@ class WebGLVectorLayerRenderer extends WebGLLayerRenderer {
   renderFrame(frameState) {
     const gl = this.helper.getGL();
     this.preRender(gl, frameState);
+
+    if (this.buffers_) {
+      this.updateRenderExtent_(
+        this.buffers_.invertVerticesTransform,
+        frameState,
+      );
+    }
 
     const [startWorld, endWorld, worldWidth] = getWorldParameters(
       frameState,

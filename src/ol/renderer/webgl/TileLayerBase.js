@@ -13,7 +13,6 @@ import {
   getKey as getTileCoordKey,
 } from '../../tilecoord.js';
 import {
-  apply as applyTransform,
   create as createTransform,
   reset as resetTransform,
   rotate as rotateTransform,
@@ -24,6 +23,7 @@ import {abstract, getUid} from '../../util.js';
 import {create as createMat4} from '../../vec/mat4.js';
 import {DefaultUniform} from '../../webgl/Helper.js';
 import WebGLLayerRenderer from './Layer.js';
+import {transformExtent2D} from './worldUtil.js';
 
 export const Uniforms = {
   ...DefaultUniform,
@@ -169,14 +169,6 @@ class WebGLBaseTileLayerRenderer extends WebGLLayerRenderer {
      */
     this.tileTransform_ = createTransform();
 
-    /**
-     * @protected
-     */
-    this.tmpCoords_ = [0, 0];
-    /**
-     * @protected
-     */
-    this.tmpCoords2_ = [0, 0];
     /**
      * @protected
      */
@@ -872,20 +864,7 @@ class WebGLBaseTileLayerRenderer extends WebGLLayerRenderer {
    * @param {import('../../transform.js').Transform} worldToLocalTransform Transform.
    */
   applyRenderExtentUniform(renderExtent, worldToLocalTransform) {
-    // minx, miny
-    this.tmpCoords_[0] = renderExtent[0];
-    this.tmpCoords_[1] = renderExtent[1];
-    applyTransform(worldToLocalTransform, this.tmpCoords_);
-
-    // maxx, maxy
-    this.tmpCoords2_[0] = renderExtent[2];
-    this.tmpCoords2_[1] = renderExtent[3];
-    applyTransform(worldToLocalTransform, this.tmpCoords2_);
-
-    this.tmpExtent_[0] = this.tmpCoords_[0];
-    this.tmpExtent_[1] = this.tmpCoords_[1];
-    this.tmpExtent_[2] = this.tmpCoords2_[0];
-    this.tmpExtent_[3] = this.tmpCoords2_[1];
+    transformExtent2D(renderExtent, worldToLocalTransform, this.tmpExtent_);
     this.helper.setUniformFloatVec4(Uniforms.RENDER_EXTENT, this.tmpExtent_);
   }
 }

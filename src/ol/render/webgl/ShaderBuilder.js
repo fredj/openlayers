@@ -665,6 +665,17 @@ ${this.attributes_
   )
   .join('\n')}
 ${this.fragmentDiscardExpression_ ? `  if (${this.fragmentDiscardExpression_}) { discard; }` : ''}
+  vec2 worldPos = pxToWorld(gl_FragCoord.xy / u_pixelRatio);
+  if (
+    abs(u_renderExtent[0] - u_renderExtent[2]) > 0.0 && (
+      worldPos[0] < u_renderExtent[0] ||
+      worldPos[1] < u_renderExtent[1] ||
+      worldPos[0] > u_renderExtent[2] ||
+      worldPos[1] > u_renderExtent[3]
+    )
+  ) {
+    discard;
+  }
   vec2 coordsPx = gl_FragCoord.xy / u_pixelRatio - v_centerPx; // relative to center
   float c = cos(v_angle);
   float s = sin(v_angle);
