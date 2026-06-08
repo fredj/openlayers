@@ -94,16 +94,17 @@ import BaseTileLayer from './BaseTile.js';
  * @return {ParsedStyle} Shaders and uniforms generated from the style.
  */
 function parseStyle(style, bandCount, nodataBandIndex) {
-  const vertexShader = `
-    attribute vec2 ${Attributes.TEXTURE_COORD};
+  const vertexShader = `#version 300 es
+    precision highp float;
+    in vec2 ${Attributes.TEXTURE_COORD};
     uniform mat4 ${Uniforms.TILE_TRANSFORM};
     uniform float ${Uniforms.TEXTURE_PIXEL_WIDTH};
     uniform float ${Uniforms.TEXTURE_PIXEL_HEIGHT};
     uniform float ${Uniforms.TEXTURE_RESOLUTION};
     uniform float ${Uniforms.DEPTH};
 
-    varying vec2 v_textureCoord;
-    varying vec2 v_localMapCoord;
+    out vec2 v_textureCoord;
+    out vec2 v_localMapCoord;
 
     void main() {
       v_textureCoord = ${Attributes.TEXTURE_COORD};
@@ -222,7 +223,7 @@ function parseStyle(style, bandCount, nodataBandIndex) {
         bandIndex = 3;
       }
       const textureName = `${Uniforms.TILE_TEXTURE_ARRAY}[${colorIndex}]`;
-      ifBlocks += `  if (band == ${i + 1}.0) {\n    return texture2D(${textureName}, v_textureCoord + vec2(dx, dy))[${bandIndex}];\n  }\n`;
+      ifBlocks += `  if (band == ${i + 1}.0) {\n    return texture(${textureName}, v_textureCoord + vec2(dx, dy))[${bandIndex}];\n  }\n`;
     }
     context.functions['getBandValue'] =
       `float getBandValue(float band, float xOffset, float yOffset) {\n  float dx = xOffset / ${Uniforms.TEXTURE_PIXEL_WIDTH};\n  float dy = yOffset / ${Uniforms.TEXTURE_PIXEL_HEIGHT};\n${ifBlocks}\n}`;
@@ -234,15 +235,11 @@ function parseStyle(style, bandCount, nodataBandIndex) {
     },
   );
 
-  const fragmentShader = `
-    #ifdef GL_FRAGMENT_PRECISION_HIGH
+  const fragmentShader = `#version 300 es
     precision highp float;
-    #else
-    precision mediump float;
-    #endif
 
-    varying vec2 v_textureCoord;
-    varying vec2 v_localMapCoord;
+    in vec2 v_textureCoord;
+    in vec2 v_localMapCoord;
     uniform vec4 ${Uniforms.RENDER_EXTENT};
     uniform float ${Uniforms.TRANSITION_ALPHA};
     uniform float ${Uniforms.TEXTURE_PIXEL_WIDTH};
@@ -254,6 +251,7 @@ function parseStyle(style, bandCount, nodataBandIndex) {
 
     ${functionDefintions.join('\n')}
 
+    out vec4 fragColor;
     void main() {
       if (
         v_localMapCoord[0] < ${Uniforms.RENDER_EXTENT}[0] ||
@@ -264,7 +262,7 @@ function parseStyle(style, bandCount, nodataBandIndex) {
         discard;
       }
 
-      vec4 color = texture2D(${
+      vec4 color = texture(${
         Uniforms.TILE_TEXTURE_ARRAY
       }[0],  v_textureCoord);
 
@@ -272,9 +270,9 @@ function parseStyle(style, bandCount, nodataBandIndex) {
 
       ${pipeline.join('\n')}
 
-      gl_FragColor = color;
-      gl_FragColor.rgb *= gl_FragColor.a;
-      gl_FragColor *= ${Uniforms.TRANSITION_ALPHA};
+      fragColor = color;
+      fragColor.rgb *= fragColor.a;
+      fragColor *= ${Uniforms.TRANSITION_ALPHA};
     }`;
 
   return {
