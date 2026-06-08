@@ -400,13 +400,13 @@ describe('ol/expr/gpu.js', () => {
   float dx = xOffset / u_texturePixelWidth;
   float dy = yOffset / u_texturePixelHeight;
   if (band == 1.0) {
-    return texture2D(u_tileTextures[0], v_textureCoord + vec2(dx, dy))[0];
+    return texture(u_tileTextures[0], v_textureCoord + vec2(dx, dy))[0];
   }
   if (band == 2.0) {
-    return texture2D(u_tileTextures[0], v_textureCoord + vec2(dx, dy))[1];
+    return texture(u_tileTextures[0], v_textureCoord + vec2(dx, dy))[1];
   }
   if (band == 3.0) {
-    return texture2D(u_tileTextures[0], v_textureCoord + vec2(dx, dy))[2];
+    return texture(u_tileTextures[0], v_textureCoord + vec2(dx, dy))[2];
   }
 
 }`);

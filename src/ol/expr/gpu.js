@@ -386,7 +386,7 @@ ${tests.join('\n')}
         }
         const textureName = `${Uniforms.TILE_TEXTURE_ARRAY}[${colorIndex}]`;
         ifBlocks += `  if (band == ${i + 1}.0) {
-    return texture2D(${textureName}, v_textureCoord + vec2(dx, dy))[${bandIndex}];
+    return texture(${textureName}, v_textureCoord + vec2(dx, dy))[${bandIndex}];
   }
 `;
       }
@@ -425,7 +425,7 @@ ${ifBlocks}
     const paletteTexture = new PaletteTexture(paletteName, palette);
     context.paletteTextures.push(paletteTexture);
     const compiledIndex = compile(index, NumberType, context);
-    return `texture2D(${paletteName}, vec2((${compiledIndex} + 0.5) / ${numColors}.0, 0.5))`;
+    return `texture(${paletteName}, vec2((${compiledIndex} + 0.5) / ${numColors}.0, 0.5))`;
   },
   // TODO: unimplemented
   // Ops.Number

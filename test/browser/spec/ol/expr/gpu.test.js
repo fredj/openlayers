@@ -78,7 +78,7 @@ describe('ol/expr/gpu', () => {
         ],
         type: AnyType,
         expected:
-          'texture2D(u_paletteTextures[0], vec2((a_prop_color + 0.5) / 3.0, 0.5))',
+          'texture(u_paletteTextures[0], vec2((a_prop_color + 0.5) / 3.0, 0.5))',
         contextAssertion: (context) => {
           expect(context.paletteTextures[0]).to.eql({
             name: 'u_paletteTextures[0]',

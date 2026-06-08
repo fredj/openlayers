@@ -169,7 +169,7 @@ class WebGLVectorTileLayerRenderer extends WebGLBaseTileLayerRenderer {
   createRenderers_() {
     function addBuilderParams(builder) {
       const exisitingDiscard = builder.getFragmentDiscardExpression();
-      const discardFromMask = `texture2D(${Uniforms.TILE_MASK_TEXTURE}, gl_FragCoord.xy / u_pixelRatio / u_viewportSizePx).r * 50. > ${Uniforms.TILE_ZOOM_LEVEL} + 0.5`;
+      const discardFromMask = `texture(${Uniforms.TILE_MASK_TEXTURE}, gl_FragCoord.xy / u_pixelRatio / u_viewportSizePx).r * 50. > ${Uniforms.TILE_ZOOM_LEVEL} + 0.5`;
       builder.setFragmentDiscardExpression(
         exisitingDiscard !== null
           ? `(${exisitingDiscard}) || (${discardFromMask})`

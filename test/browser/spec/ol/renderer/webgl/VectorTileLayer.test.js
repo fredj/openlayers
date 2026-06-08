@@ -196,14 +196,14 @@ describe('ol/renderer/webgl/VectorTileLayer', function () {
         {name: 'u_tileZoomLevel', type: 'float'},
       ]);
       expect(firstBuilder.getFragmentDiscardExpression()).to.be(
-        'texture2D(u_depthMask, gl_FragCoord.xy / u_pixelRatio / u_viewportSizePx).r * 50. > u_tileZoomLevel + 0.5',
+        'texture(u_depthMask, gl_FragCoord.xy / u_pixelRatio / u_viewportSizePx).r * 50. > u_tileZoomLevel + 0.5',
       );
       expect(secondBuilder.uniforms_).to.eql([
         {name: 'u_depthMask', type: 'sampler2D'},
         {name: 'u_tileZoomLevel', type: 'float'},
       ]);
       expect(secondBuilder.getFragmentDiscardExpression()).to.be(
-        'texture2D(u_depthMask, gl_FragCoord.xy / u_pixelRatio / u_viewportSizePx).r * 50. > u_tileZoomLevel + 0.5',
+        'texture(u_depthMask, gl_FragCoord.xy / u_pixelRatio / u_viewportSizePx).r * 50. > u_tileZoomLevel + 0.5',
       );
     });
     it('instantiates the tile mask target, indices, attributes and program', () => {
@@ -253,7 +253,7 @@ describe('ol/renderer/webgl/VectorTileLayer', function () {
       it('adds the mask discard expression to the existing fragment discard', () => {
         const builder = renderer.styleRenderer_.styleShaders[0].builder;
         expect(builder.getFragmentDiscardExpression()).to.be(
-          '(u_zoom > 10.0) || (texture2D(u_depthMask, gl_FragCoord.xy / u_pixelRatio / u_viewportSizePx).r * 50. > u_tileZoomLevel + 0.5)',
+          '(u_zoom > 10.0) || (texture(u_depthMask, gl_FragCoord.xy / u_pixelRatio / u_viewportSizePx).r * 50. > u_tileZoomLevel + 0.5)',
         );
       });
     });

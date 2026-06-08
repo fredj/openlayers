@@ -317,7 +317,7 @@ describe('ol/layer/WebGLTile', function () {
         ) {
           discard;
         }
-        vec4 color = texture2D(u_tileTextures[0], v_textureCoord);
+        vec4 color = texture(u_tileTextures[0], v_textureCoord);
         color = vec4(u_var_r / 255.0, u_var_g / 255.0, u_var_b / 255.0, 1.0);
         gl_FragColor = color;
         gl_FragColor.rgb *= gl_FragColor.a;
@@ -403,16 +403,16 @@ describe('ol/layer/WebGLTile', function () {
         float dx = xOffset / u_texturePixelWidth;
         float dy = yOffset / u_texturePixelHeight;
         if (band == 1.0) {
-          return texture2D(u_tileTextures[0], v_textureCoord + vec2(dx, dy))[0];
+          return texture(u_tileTextures[0], v_textureCoord + vec2(dx, dy))[0];
         }
         if (band == 2.0) {
-          return texture2D(u_tileTextures[0], v_textureCoord + vec2(dx, dy))[1];
+          return texture(u_tileTextures[0], v_textureCoord + vec2(dx, dy))[1];
         }
         if (band == 3.0) {
-          return texture2D(u_tileTextures[0], v_textureCoord + vec2(dx, dy))[2];
+          return texture(u_tileTextures[0], v_textureCoord + vec2(dx, dy))[2];
         }
         if (band == 4.0) {
-          return texture2D(u_tileTextures[0], v_textureCoord + vec2(dx, dy))[3];
+          return texture(u_tileTextures[0], v_textureCoord + vec2(dx, dy))[3];
         }
       }
 
@@ -425,7 +425,7 @@ describe('ol/layer/WebGLTile', function () {
         ) {
           discard;
         }
-        vec4 color = texture2D(u_tileTextures[0], v_textureCoord);
+        vec4 color = texture(u_tileTextures[0], v_textureCoord);
         color = vec4((getBandValue(4.0, 0.0, 0.0) / 3000.0), (getBandValue(1.0, 0.0, 0.0) / 3000.0), (getBandValue(2.0, 0.0, 0.0) / 3000.0), 1.0);
         gl_FragColor = color;
         gl_FragColor.rgb *= gl_FragColor.a;

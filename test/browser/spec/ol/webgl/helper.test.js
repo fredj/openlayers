@@ -12,8 +12,8 @@ import WebGLHelper, {
   DefaultUniform,
 } from '../../../../../src/ol/webgl/Helper.js';
 
-const VERTEX_SHADER = `
-  precision mediump float;
+const VERTEX_SHADER = `#version 300 es
+  precision highp float;
 
   uniform mat4 u_offsetScaleMatrix;
   uniform mat4 u_offsetRotateMatrix;
@@ -21,7 +21,7 @@ const VERTEX_SHADER = `
   uniform float u_zoom;
   uniform float u_resolution;
 
-  attribute float a_test;
+  in float a_test;
   uniform float u_test;
 
   void main(void) {
@@ -44,11 +44,12 @@ const INVALID_VERTEX_SHADER = `
     gl_Position = vec4(u_test, a_test, 0.0, 1.0);
   }`;
 
-const FRAGMENT_SHADER = `
-  precision mediump float;
+const FRAGMENT_SHADER = `#version 300 es
+  precision highp float;
 
+  out vec4 fragColor;
   void main(void) {
-    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+    fragColor = vec4(1.0, 1.0, 1.0, 1.0);
   }`;
 
 const INVALID_FRAGMENT_SHADER = `
@@ -81,7 +82,7 @@ describe('ol/webgl/WebGLHelper', function () {
       });
 
       it('initialized WebGL context & canvas', function () {
-        expect(h.getGL() instanceof WebGLRenderingContext).to.eql(true);
+        expect(h.getGL() instanceof WebGL2RenderingContext).to.eql(true);
         expect(h.getCanvas() instanceof HTMLCanvasElement).to.eql(true);
       });
 
@@ -495,14 +496,14 @@ describe('ol/webgl/WebGLHelper', function () {
       h.useProgram(
         h.getProgram(
           FRAGMENT_SHADER,
-          `
-        precision mediump float;
+          `#version 300 es
+        precision highp float;
 
         uniform mat4 u_projectionMatrix;
         uniform mat4 u_offsetScaleMatrix;
         uniform mat4 u_offsetRotateMatrix;
 
-        attribute vec3 attr1;
+        in vec3 attr1;
 
         void main(void) {
           gl_Position = vec4(attr1, 1.0);
@@ -514,10 +515,7 @@ describe('ol/webgl/WebGLHelper', function () {
 
     it('enables attributes based on the given array (FLOAT)', function () {
       const spy = sinonSpy(h, 'enableAttributeArray_');
-      const extSpy = sinonSpy(
-        h.getInstancedRenderingExtension_(),
-        'vertexAttribDivisorANGLE',
-      );
+      const divisorSpy = sinonSpy(h.getGL(), 'vertexAttribDivisor');
       h.enableAttributesInstanced(baseAttrs);
       const bytesPerFloat = Float32Array.BYTES_PER_ELEMENT;
 
@@ -531,8 +529,8 @@ describe('ol/webgl/WebGLHelper', function () {
         true,
       ]);
 
-      expect(extSpy.callCount).to.eql(1);
-      expect(extSpy.firstCall.args).to.eql([
+      expect(divisorSpy.callCount).to.eql(1);
+      expect(divisorSpy.firstCall.args).to.eql([
         h.getAttributeLocation('attr1'),
         1,
       ]);
@@ -577,17 +575,12 @@ describe('ol/webgl/WebGLHelper', function () {
         h.getProgram(FRAGMENT_SHADER, VERTEX_SHADER),
         SAMPLE_FRAMESTATE,
       );
-      drawSpy = sinonSpy(
-        h.getInstancedRenderingExtension_(),
-        'drawElementsInstancedANGLE',
-      );
-      divisorSpy = sinonSpy(
-        h.getInstancedRenderingExtension_(),
-        'vertexAttribDivisorANGLE',
-      );
+      const gl = h.getGL();
+      drawSpy = sinonSpy(gl, 'drawElementsInstanced');
+      divisorSpy = sinonSpy(gl, 'vertexAttribDivisor');
       h.drawElementsInstanced(0, 8, 20);
     });
-    it('calls drawElementsInstancedANGLE', () => {
+    it('calls drawElementsInstanced', () => {
       const gl = h.getGL();
       expect(drawSpy.callCount).to.eql(1);
       expect(drawSpy.firstCall.args).to.eql([

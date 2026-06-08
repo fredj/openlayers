@@ -435,7 +435,7 @@ function parseIconProperties(style, builder, uniforms, context) {
   );
   builder
     .setSymbolColorExpression(
-      `${color} * texture2D(u_texture${textureId}, v_texCoord)`,
+      `${color} * texture(u_texture${textureId}, v_texCoord)`,
     )
     .setSymbolSizeExpression(sizeExpression);
 
@@ -582,7 +582,7 @@ function parseStrokeProperties(style, builder, uniforms, context) {
   uCoordPx = clamp(uCoordPx, 0.5, sampleSize.x - 0.5);
   vCoordPx = clamp(vCoordPx, 0.5, sampleSize.y - 0.5);
   vec2 texCoord = (vec2(uCoordPx, vCoordPx) + textureOffset) / textureSize;
-  return texture2D(texture, texCoord) * vec4(1.0, 1.0, 1.0, isInsideOfPattern);
+  return texture(texture, texCoord) * vec4(1.0, 1.0, 1.0, isInsideOfPattern);
 }`;
     const textureName = `u_texture${textureId}`;
     let tintExpression = '1.';
@@ -757,7 +757,7 @@ function parseFillProperties(style, builder, uniforms, context) {
   // also make sure that we're not sampling too close to the borders to avoid interpolation with outside pixels
   samplePos = clamp(samplePos, vec2(0.5), sampleSize - vec2(0.5));
   samplePos.y = sampleSize.y - samplePos.y; // invert y axis so that images appear upright
-  return texture2D(texture, (samplePos + textureOffset) / textureSize);
+  return texture(texture, (samplePos + textureOffset) / textureSize);
 }`;
     const textureName = `u_texture${textureId}`;
     let tintExpression = '1.';

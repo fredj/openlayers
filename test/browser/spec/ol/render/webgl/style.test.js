@@ -421,7 +421,7 @@ describe('ol/render/webgl/style', () => {
             },
           ]);
           expect(result.builder.symbolColorExpression_).to.eql(
-            `a_prop_color1 * vec4(1.0, 1.0, 1.0, (0.5 * 0.75)) * texture2D(u_texture${uid}, v_texCoord)`,
+            `a_prop_color1 * vec4(1.0, 1.0, 1.0, (0.5 * 0.75)) * texture(u_texture${uid}, v_texCoord)`,
           );
           expect(result.builder.symbolSizeExpression_).to.eql(
             'vec2(30.0, 40.0) * vec2(1.5, 1.7)',
