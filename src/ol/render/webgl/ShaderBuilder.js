@@ -8,11 +8,8 @@ import {LINESTRING_ANGLE_COSINE_CUTOFF} from './bufferUtil.js';
 import {UNPACK_COLOR_FN} from './compileUtil.js';
 import {FLOAT64_ARITHMETIC_FN} from './float64Util.js';
 
-export const COMMON_HEADER = `#ifdef GL_FRAGMENT_PRECISION_HIGH
+export const COMMON_HEADER = `#version 300 es
 precision highp float;
-#else
-precision mediump float;
-#endif
 uniform float u_one;
 uniform mat4 u_projectionMatrix;
 uniform mat4 u_invertProjectionMatrix;
