@@ -373,20 +373,21 @@ class Heatmap extends BaseVector {
       disableHitDetection: false,
       postProcesses: [
         {
-          fragmentShader: `
-            precision mediump float;
+          fragmentShader: `#version 300 es
+            precision highp float;
 
             uniform sampler2D u_image;
             uniform sampler2D u_gradientTexture;
             uniform float u_opacity;
 
-            varying vec2 v_texCoord;
+            in vec2 v_texCoord;
+            out vec4 fragColor;
 
             void main() {
-              vec4 color = texture2D(u_image, v_texCoord);
-              gl_FragColor.a = color.a * u_opacity;
-              gl_FragColor.rgb = texture2D(u_gradientTexture, vec2(0.5, color.a)).rgb;
-              gl_FragColor.rgb *= gl_FragColor.a;
+              vec4 color = texture(u_image, v_texCoord);
+              fragColor.a = color.a * u_opacity;
+              fragColor.rgb = texture(u_gradientTexture, vec2(0.5, color.a)).rgb;
+              fragColor.rgb *= fragColor.a;
             }`,
           uniforms: {
             u_gradientTexture: () => this.gradient_,
