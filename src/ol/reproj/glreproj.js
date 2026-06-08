@@ -12,8 +12,9 @@ import {WORKER_OFFSCREEN_CANVAS} from '../has.js';
 import * as mat4 from '../vec/mat4.js';
 import {Canvas as WebGLCanvas, createProgram} from '../webgl/Canvas.js';
 
-const EDGE_VERTEX_SHADER = `
-  attribute vec4 a_position;
+const EDGE_VERTEX_SHADER = `#version 300 es
+  precision highp float;
+  in vec4 a_position;
 
   uniform mat4 u_matrix;
 
@@ -21,20 +22,22 @@ const EDGE_VERTEX_SHADER = `
      gl_Position = u_matrix * a_position;
   }
 `;
-const EDGE_FRAGMENT_SHADER = `
-  precision mediump float;
+const EDGE_FRAGMENT_SHADER = `#version 300 es
+  precision highp float;
 
   uniform vec4 u_val;
+  out vec4 fragColor;
   void main() {
-     gl_FragColor = u_val;
+     fragColor = u_val;
   }
 `;
 
-const TRIANGLE_VERTEX_SHADER = `
-  attribute vec4 a_position;
-  attribute vec2 a_texcoord;
+const TRIANGLE_VERTEX_SHADER = `#version 300 es
+  precision highp float;
+  in vec4 a_position;
+  in vec2 a_texcoord;
 
-  varying vec2 v_texcoord;
+  out vec2 v_texcoord;
 
   uniform mat4 u_matrix;
 
@@ -43,18 +46,19 @@ const TRIANGLE_VERTEX_SHADER = `
      v_texcoord = a_texcoord;
   }
 `;
-const TRIANGLE_FRAGMENT_SHADER = `
-  precision mediump float;
+const TRIANGLE_FRAGMENT_SHADER = `#version 300 es
+  precision highp float;
 
-  varying vec2 v_texcoord;
+  in vec2 v_texcoord;
 
   uniform sampler2D u_texture;
+  out vec4 fragColor;
 
   void main() {
     if (v_texcoord.x < 0.0 || v_texcoord.x > 1.0 || v_texcoord.y < 0.0 || v_texcoord.y > 1.0) {
       discard;
     }
-    gl_FragColor = texture2D(u_texture, v_texcoord);
+    fragColor = texture(u_texture, v_texcoord);
   }
 `;
 
@@ -64,7 +68,7 @@ const TRIANGLE_FRAGMENT_SHADER = `
  * @param {number} [height] Canvas height.
  * @param {Array<HTMLCanvasElement | OffscreenCanvas>} [canvasPool] Canvas pool to take existing canvas from.
  * @param {WebGLContextAttributes} [settings] CanvasRenderingContext2DSettings
- * @return {WebGLRenderingContext} The context.
+ * @return {WebGL2RenderingContext} The context.
  */
 export function createCanvasContextWebGL(width, height, canvasPool, settings) {
   /** @type {HTMLCanvasElement|OffscreenCanvas} */
@@ -83,15 +87,15 @@ export function createCanvasContextWebGL(width, height, canvasPool, settings) {
     canvas.height = height;
   }
   //FIXME Allow OffscreenCanvasRenderingContext2D as return type
-  return /** @type {WebGLRenderingContext} */ (
-    canvas.getContext('webgl', settings)
+  return /** @type {WebGL2RenderingContext} */ (
+    canvas.getContext('webgl2', settings)
   );
 }
 
 /**
  * Releases canvas memory to avoid exceeding memory limits in Safari.
  * See https://pqina.nl/blog/total-canvas-memory-use-exceeds-the-maximum-limit/
- * @param {WebGLRenderingContext} gl Context.
+ * @param {WebGL2RenderingContext} gl Context.
  */
 export function releaseGLCanvas(gl) {
   const canvas = gl.canvas;
@@ -117,7 +121,7 @@ export const canvasGLPool = [];
 /**
  * Renders the source data into new canvas based on the triangulation.
  *
- * @param {WebGLRenderingContext} gl the context to render in.
+ * @param {WebGL2RenderingContext} gl the context to render in.
  * @param {number} width_ Width of the canvas.
  * @param {number} height_ Height of the canvas.
  * @param {number} pixelRatio Pixel ratio.
