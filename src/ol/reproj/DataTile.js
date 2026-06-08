@@ -314,7 +314,7 @@ class ReprojDataTile extends DataTile {
   /**
    * @private
    */
-  reproject_() {
+  async reproject_() {
     const dataSources = [];
     let imageLike = false;
     this.sourceTiles_.forEach((source) => {
@@ -500,6 +500,26 @@ class ReprojDataTile extends DataTile {
       reproj_results.push({pbo, width, height, reproj});
     }
 
+    // Insert a fence and flush so the GPU starts executing the render passes.
+    // Poll clientWaitSync (yielding the event loop each iteration) until the
+    // GPU signals completion, then proceed to Phase 2 without a pipeline stall.
+    const fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    gl.flush();
+    await new Promise((resolve) => {
+      function check() {
+        const status = gl.clientWaitSync(fence, 0, 0);
+        if (
+          status === gl.ALREADY_SIGNALED ||
+          status === gl.CONDITION_SATISFIED
+        ) {
+          resolve();
+        } else {
+          setTimeout(check, 0);
+        }
+      }
+      setTimeout(check, 0);
+    });
+
     // Phase 2: retrieve results from PBOs and assemble the output array.
     // All render passes have been submitted, so getBufferSubData amortises
     // the single GPU→CPU sync across every pass instead of one stall per pass.
@@ -524,6 +544,8 @@ class ReprojDataTile extends DataTile {
         offset += bandCount;
       }
     }
+
+    gl.deleteSync(fence);
 
     releaseGLCanvas(gl);
     canvasGLPool.push(gl.canvas);
