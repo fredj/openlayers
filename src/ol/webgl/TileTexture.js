@@ -75,21 +75,27 @@ function uploadDataTexture(
     unpackAlignment = 2;
   }
 
+  const isFloat = textureType === gl.FLOAT;
+  let internalFormat;
   let format;
   switch (bandCount) {
     case 1: {
-      format = gl.LUMINANCE;
+      internalFormat = isFloat ? gl.R32F : gl.R8;
+      format = gl.RED;
       break;
     }
     case 2: {
-      format = gl.LUMINANCE_ALPHA;
+      internalFormat = isFloat ? gl.RG32F : gl.RG8;
+      format = gl.RG;
       break;
     }
     case 3: {
+      internalFormat = isFloat ? gl.RGB32F : gl.RGB8;
       format = gl.RGB;
       break;
     }
     case 4: {
+      internalFormat = isFloat ? gl.RGBA32F : gl.RGBA8;
       format = gl.RGBA;
       break;
     }
@@ -103,7 +109,7 @@ function uploadDataTexture(
   gl.texImage2D(
     gl.TEXTURE_2D,
     0,
-    format,
+    internalFormat,
     size[0],
     size[1],
     0,
