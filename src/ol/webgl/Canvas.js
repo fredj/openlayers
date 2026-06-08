@@ -4,14 +4,15 @@ import * as mat4 from '../vec/mat4.js';
  * @module ol/webgl/Canvas
  */
 
-const VERTEX_SHADER = `
-  attribute vec4 a_position;
-  attribute vec4 a_texcoord;
+const VERTEX_SHADER = `#version 300 es
+  precision highp float;
+  in vec4 a_position;
+  in vec4 a_texcoord;
 
   uniform mat4 u_matrix;
   uniform mat4 u_textureMatrix;
 
-  varying vec2 v_texcoord;
+  out vec2 v_texcoord;
 
   void main() {
     gl_Position = u_matrix * a_position;
@@ -20,12 +21,13 @@ const VERTEX_SHADER = `
   }
 `;
 
-const FRAGMENT_SHADER = `
-  precision mediump float;
+const FRAGMENT_SHADER = `#version 300 es
+  precision highp float;
 
-  varying vec2 v_texcoord;
+  in vec2 v_texcoord;
 
   uniform sampler2D u_texture;
+  out vec4 fragColor;
 
   void main() {
     if (
@@ -36,7 +38,7 @@ const FRAGMENT_SHADER = `
     ) {
       discard;
     }
-    gl_FragColor = texture2D(u_texture, v_texcoord);
+    fragColor = texture(u_texture, v_texcoord);
   }
 `;
 
@@ -47,12 +49,12 @@ const FRAGMENT_SHADER = `
  */
 export class Canvas {
   /**
-   * @param {WebGLRenderingContext} gl Context to render in.
+   * @param {WebGL2RenderingContext} gl Context to render in.
    */
   constructor(gl) {
     /**
      * @private
-     * @type {WebGLRenderingContext}
+     * @type {WebGL2RenderingContext}
      */
     this.gl_ = gl;
 
@@ -186,7 +188,7 @@ export class Canvas {
 }
 
 /**
- * @param {WebGLRenderingContext} gl Rendering Context.
+ * @param {WebGL2RenderingContext} gl Rendering Context.
  * @param {GLenum} type Type of shader.
  * @param {string} source source of shader.
  * @return {WebGLShader} [progam] The program.
@@ -213,7 +215,7 @@ function createShader(gl, type, source) {
 }
 
 /**
- * @param {WebGLRenderingContext} gl Rendering Context.
+ * @param {WebGL2RenderingContext} gl Rendering Context.
  * @param {string} fragmentSource Fragment shader source.
  * @param {string} vertexSource Vertex shader source.
  * @return {WebGLProgram} [progam] The program.
