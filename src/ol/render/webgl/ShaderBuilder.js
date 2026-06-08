@@ -575,7 +575,7 @@ in vec2 a_hitColor;
 
 out vec2 v_texCoord;
 out vec2 v_quadCoord;
-out vec4 v_hitColor;
+flat out vec4 v_hitColor;
 out vec2 v_centerPx;
 out float v_angle;
 out vec2 v_quadSizePx;
@@ -643,7 +643,7 @@ ${
     return `${COMMON_HEADER}
 ${this.uniforms_.map((uniform) => `uniform ${uniform.type} ${uniform.name};`).join('\n')}
 in vec2 v_texCoord;
-in vec4 v_hitColor;
+flat in vec4 v_hitColor;
 in vec2 v_centerPx;
 in float v_angle;
 in vec2 v_quadSizePx;
@@ -703,7 +703,7 @@ out vec2 v_segmentEndPx;
 out float v_angleStart;
 out float v_angleEnd;
 out float v_width;
-out vec4 v_hitColor;
+flat out vec4 v_hitColor;
 out float v_distancePx;
 out float v_measureStart;
 out float v_measureEnd;
@@ -824,7 +824,7 @@ in vec2 v_segmentEndPx;
 in float v_angleStart;
 in float v_angleEnd;
 in float v_width;
-in vec4 v_hitColor;
+flat in vec4 v_hitColor;
 in float v_distancePx;
 in float v_measureStart;
 in float v_measureEnd;
@@ -993,7 +993,7 @@ ${this.uniforms_.map((uniform) => `uniform ${uniform.type} ${uniform.name};`).jo
 in vec2 a_position;
 in vec2 a_hitColor;
 
-out vec4 v_hitColor;
+flat out vec4 v_hitColor;
 out vec2 v_patternOriginPx;
 out vec2 v_patternSizePx;
 
@@ -1054,7 +1054,7 @@ ${
 
     return `${COMMON_HEADER}
 ${this.uniforms_.map((uniform) => `uniform ${uniform.type} ${uniform.name};`).join('\n')}
-in vec4 v_hitColor;
+flat in vec4 v_hitColor;
 in vec2 v_patternOriginPx;
 in vec2 v_patternSizePx;
 ${this.attributes_
