@@ -12,7 +12,7 @@ import BaseTileRepresentation from './BaseTileRepresentation.js';
 import WebGLArrayBuffer from './Buffer.js';
 
 /**
- * @param {WebGLRenderingContext} gl The WebGL context.
+ * @param {WebGL2RenderingContext} gl The WebGL context.
  * @param {WebGLTexture} texture The texture.
  * @param {boolean} interpolate Interpolate when resampling.
  */
@@ -26,7 +26,7 @@ function bindAndConfigure(gl, texture, interpolate) {
 }
 
 /**
- * @param {WebGLRenderingContext} gl The WebGL context.
+ * @param {WebGL2RenderingContext} gl The WebGL context.
  * @param {WebGLTexture} texture The texture.
  * @param {import("../DataTile.js").ImageLike} image The image.
  * @param {boolean} interpolate Interpolate when resampling.
@@ -58,9 +58,7 @@ function uploadDataTexture(
   let canInterpolate;
   if (data instanceof Float32Array) {
     textureType = gl.FLOAT;
-    helper.getExtension('OES_texture_float');
-    const extension = helper.getExtension('OES_texture_float_linear');
-    canInterpolate = extension !== null;
+    canInterpolate = true; // float textures and linear filtering are core in WebGL 2
   } else {
     textureType = gl.UNSIGNED_BYTE;
     canInterpolate = true;
