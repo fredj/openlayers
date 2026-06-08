@@ -637,7 +637,11 @@ function withGetArgs(encoded, returnType, context) {
       }
     }
     if (i === 0) {
-      context.properties.set(String(key), returnType);
+      const propName = String(key);
+      const existingType = context.properties.get(propName);
+      if (existingType === undefined || existingType === AnyType) {
+        context.properties.set(propName, returnType);
+      }
     }
   }
   return args;
@@ -651,7 +655,14 @@ function withVarArgs(encoded, returnType, context) {
   if (typeof name !== 'string') {
     throw new Error('expected a string argument for var operation');
   }
-  context.variables.set(name, returnType);
+  // Keep the most specific (narrowest) type seen for this variable across all
+  // parse calls. A variable referenced in both ['==', ['var','x'], 'str'] and
+  // ['==', ['var','x'], ['get','prop']] should retain StringType, not be
+  // widened back to AnyType by the second expression whose ['get'] is untyped.
+  const existingType = context.variables.get(name);
+  if (existingType === undefined || existingType === AnyType) {
+    context.variables.set(name, returnType);
+  }
 
   return [new LiteralExpression(StringType, name)];
 }
