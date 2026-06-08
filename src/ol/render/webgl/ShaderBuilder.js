@@ -569,21 +569,21 @@ export class ShaderBuilder {
 
     return `${COMMON_HEADER}
 ${this.uniforms_.map((uniform) => `uniform ${uniform.type} ${uniform.name};`).join('\n')}
-attribute vec2 a_position;
-attribute vec2 a_localPosition;
-attribute vec2 a_hitColor;
+in vec2 a_position;
+in vec2 a_localPosition;
+in vec2 a_hitColor;
 
-varying vec2 v_texCoord;
-varying vec2 v_quadCoord;
-varying vec4 v_hitColor;
-varying vec2 v_centerPx;
-varying float v_angle;
-varying vec2 v_quadSizePx;
+out vec2 v_texCoord;
+out vec2 v_quadCoord;
+out vec4 v_hitColor;
+out vec2 v_centerPx;
+out float v_angle;
+out vec2 v_quadSizePx;
 
 ${this.attributes_
   .map(
-    (attribute) => `attribute ${attribute.type} ${attribute.name};
-varying ${attribute.varyingType} ${attribute.varyingName};`,
+    (attribute) => `in ${attribute.type} ${attribute.name};
+out ${attribute.varyingType} ${attribute.varyingName};`,
   )
   .join('\n')}
 ${this.vertexShaderFunctions_.join('\n')}
@@ -686,31 +686,31 @@ ${this.fragmentDiscardExpression_ ? `  if (${this.fragmentDiscardExpression_}) {
 
     return `${COMMON_HEADER}
 ${this.uniforms_.map((uniform) => `uniform ${uniform.type} ${uniform.name};`).join('\n')}
-attribute vec2 a_segmentStart;
-attribute vec2 a_segmentEnd;
-attribute vec2 a_localPosition;
-attribute float a_measureStart;
-attribute float a_measureEnd;
-attribute float a_angleTangentSum;
-attribute float a_distanceLow;
-attribute float a_distanceHigh;
-attribute vec2 a_joinAngles;
-attribute vec2 a_hitColor;
+in vec2 a_segmentStart;
+in vec2 a_segmentEnd;
+in vec2 a_localPosition;
+in float a_measureStart;
+in float a_measureEnd;
+in float a_angleTangentSum;
+in float a_distanceLow;
+in float a_distanceHigh;
+in vec2 a_joinAngles;
+in vec2 a_hitColor;
 
-varying vec2 v_segmentStartPx;
-varying vec2 v_segmentEndPx;
-varying float v_angleStart;
-varying float v_angleEnd;
-varying float v_width;
-varying vec4 v_hitColor;
-varying float v_distancePx;
-varying float v_measureStart;
-varying float v_measureEnd;
+out vec2 v_segmentStartPx;
+out vec2 v_segmentEndPx;
+out float v_angleStart;
+out float v_angleEnd;
+out float v_width;
+out vec4 v_hitColor;
+out float v_distancePx;
+out float v_measureStart;
+out float v_measureEnd;
 
 ${this.attributes_
   .map(
-    (attribute) => `attribute ${attribute.type} ${attribute.name};
-varying ${attribute.varyingType} ${attribute.varyingName};`,
+    (attribute) => `in ${attribute.type} ${attribute.name};
+out ${attribute.varyingType} ${attribute.varyingName};`,
   )
   .join('\n')}
 ${this.vertexShaderFunctions_.join('\n')}
@@ -988,17 +988,17 @@ ${this.fragmentDiscardExpression_ ? `  if (${this.fragmentDiscardExpression_}) {
 
     return `${COMMON_HEADER}
 ${this.uniforms_.map((uniform) => `uniform ${uniform.type} ${uniform.name};`).join('\n')}
-attribute vec2 a_position;
-attribute vec2 a_hitColor;
+in vec2 a_position;
+in vec2 a_hitColor;
 
-varying vec4 v_hitColor;
-varying vec2 v_patternOriginPx;
-varying vec2 v_patternSizePx;
+out vec4 v_hitColor;
+out vec2 v_patternOriginPx;
+out vec2 v_patternSizePx;
 
 ${this.attributes_
   .map(
-    (attribute) => `attribute ${attribute.type} ${attribute.name};
-varying ${attribute.varyingType} ${attribute.varyingName};`,
+    (attribute) => `in ${attribute.type} ${attribute.name};
+out ${attribute.varyingType} ${attribute.varyingName};`,
   )
   .join('\n')}
 ${this.vertexShaderFunctions_.join('\n')}
