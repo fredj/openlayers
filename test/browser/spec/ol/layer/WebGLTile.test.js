@@ -287,15 +287,11 @@ describe('ol/layer/WebGLTile', function () {
     compileShaderSpy.restore();
     expect(compileShaderSpy.callCount).to.be(2);
     expect(compileShaderSpy.getCall(0).args[0].replace(/[ \n]+/g, ' ')).to.be(
-      `
-      #ifdef GL_FRAGMENT_PRECISION_HIGH
+      `#version 300 es
       precision highp float;
-      #else
-      precision mediump float;
-      #endif
 
-      varying vec2 v_textureCoord;
-      varying vec2 v_localMapCoord;
+      in vec2 v_textureCoord;
+      in vec2 v_localMapCoord;
 
       uniform vec4 u_renderExtent;
       uniform float u_transitionAlpha;
@@ -308,6 +304,7 @@ describe('ol/layer/WebGLTile', function () {
       uniform float u_var_b;
       uniform sampler2D u_tileTextures[1];
 
+      out vec4 fragColor;
       void main() {
         if (
           v_localMapCoord[0] < u_renderExtent[0] ||
@@ -319,23 +316,24 @@ describe('ol/layer/WebGLTile', function () {
         }
         vec4 color = texture(u_tileTextures[0], v_textureCoord);
         color = vec4(u_var_r / 255.0, u_var_g / 255.0, u_var_b / 255.0, 1.0);
-        gl_FragColor = color;
-        gl_FragColor.rgb *= gl_FragColor.a;
-        gl_FragColor *= u_transitionAlpha;
+        fragColor = color;
+        fragColor.rgb *= fragColor.a;
+        fragColor *= u_transitionAlpha;
       }`.replace(/[ \n]+/g, ' '),
     );
 
     expect(compileShaderSpy.getCall(1).args[0].replace(/[ \n]+/g, ' ')).to.be(
-      `
-      attribute vec2 a_textureCoord;
+      `#version 300 es
+      precision highp float;
+      in vec2 a_textureCoord;
       uniform mat4 u_tileTransform;
       uniform float u_texturePixelWidth;
       uniform float u_texturePixelHeight;
       uniform float u_textureResolution;
       uniform float u_depth;
 
-      varying vec2 v_textureCoord;
-      varying vec2 v_localMapCoord;
+      out vec2 v_textureCoord;
+      out vec2 v_localMapCoord;
 
       void main() {
         v_textureCoord = a_textureCoord;
@@ -382,14 +380,11 @@ describe('ol/layer/WebGLTile', function () {
     compileShaderSpy.restore();
     expect(compileShaderSpy.callCount).to.be(2);
     expect(compileShaderSpy.getCall(0).args[0].replace(/[ \n]+/g, ' ')).to.be(
-      `
-      #ifdef GL_FRAGMENT_PRECISION_HIGH
+      `#version 300 es
       precision highp float;
-      #else
-      precision mediump float;
-      #endif varying vec2 v_textureCoord;
 
-      varying vec2 v_localMapCoord;
+      in vec2 v_textureCoord;
+      in vec2 v_localMapCoord;
 
       uniform vec4 u_renderExtent;
       uniform float u_transitionAlpha;
@@ -416,6 +411,7 @@ describe('ol/layer/WebGLTile', function () {
         }
       }
 
+      out vec4 fragColor;
       void main() {
         if (
           v_localMapCoord[0] < u_renderExtent[0] ||
@@ -427,9 +423,9 @@ describe('ol/layer/WebGLTile', function () {
         }
         vec4 color = texture(u_tileTextures[0], v_textureCoord);
         color = vec4((getBandValue(4.0, 0.0, 0.0) / 3000.0), (getBandValue(1.0, 0.0, 0.0) / 3000.0), (getBandValue(2.0, 0.0, 0.0) / 3000.0), 1.0);
-        gl_FragColor = color;
-        gl_FragColor.rgb *= gl_FragColor.a;
-        gl_FragColor *= u_transitionAlpha;
+        fragColor = color;
+        fragColor.rgb *= fragColor.a;
+        fragColor *= u_transitionAlpha;
       }`.replace(/[ \n]+/g, ' '),
     );
   });
@@ -727,7 +723,7 @@ describe('ol/layer/WebGLTile', function () {
   it('dispatches a precompose event with WebGL context', (done) => {
     let called = false;
     layer.on('precompose', (event) => {
-      expect(event.context).to.be.a(WebGLRenderingContext);
+      expect(event.context).to.be.a(WebGL2RenderingContext);
       called = true;
     });
 
@@ -742,7 +738,7 @@ describe('ol/layer/WebGLTile', function () {
   it('dispatches a prerender event with WebGL context and inverse pixel transform', (done) => {
     let called = false;
     layer.on('prerender', (event) => {
-      expect(event.context).to.be.a(WebGLRenderingContext);
+      expect(event.context).to.be.a(WebGL2RenderingContext);
       const mapSize = event.frameState.size;
       const bottomLeft = getRenderPixel(event, [0, mapSize[1]]);
       expect(bottomLeft).to.eql([0, 0]);
@@ -760,7 +756,7 @@ describe('ol/layer/WebGLTile', function () {
   it('dispatches a postrender event with WebGL context and inverse pixel transform', (done) => {
     let called = false;
     layer.on('postrender', (event) => {
-      expect(event.context).to.be.a(WebGLRenderingContext);
+      expect(event.context).to.be.a(WebGL2RenderingContext);
       const mapSize = event.frameState.size;
       const topRight = getRenderPixel(event, [mapSize[1], 0]);
       const pixelRatio = event.frameState.pixelRatio;
