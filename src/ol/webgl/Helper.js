@@ -2,7 +2,6 @@
  * @module ol/webgl/Helper
  */
 import Disposable from '../Disposable.js';
-import {assert} from '../asserts.js';
 import {clear} from '../obj.js';
 import {compose as composeTransform} from '../transform.js';
 import {getUid} from '../util.js';
@@ -109,7 +108,7 @@ export const AttributeType = {
 
 /**
  * @typedef {Object} CanvasCacheItem
- * @property {WebGLRenderingContext} context The context of this canvas.
+ * @property {WebGL2RenderingContext} context The context of this canvas.
  * @property {number} users The count of users of this canvas.
  */
 
@@ -139,7 +138,7 @@ function getUniqueCanvasCacheKey() {
 
 /**
  * @param {string} key The cache key for the canvas.
- * @return {WebGLRenderingContext} The canvas.
+ * @return {WebGL2RenderingContext} The canvas.
  */
 function getOrCreateContext(key) {
   let cacheItem = canvasCache[key];
@@ -272,7 +271,7 @@ function releaseCanvas(key) {
  *   Attributes are used to specify these uses. Specify the attribute names with
  *   {@link module:ol/webgl/Helper~WebGLHelper#enableAttributes} (see code snippet below).
  *
- *   Please note that you will have to specify the type and offset of the attributes in the data array. You can refer to the documentation of [WebGLRenderingContext.vertexAttribPointer](https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/vertexAttribPointer) for more explanation.
+ *   Please note that you will have to specify the type and offset of the attributes in the data array. You can refer to the documentation of [WebGL2RenderingContext.vertexAttribPointer](https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext/vertexAttribPointer) for more explanation.
  *   ```js
  *   // here we indicate that the data array has the following structure:
  *   // [posX, posY, offsetX, offsetY, texCoordU, texCoordV, posX, posY, ...]
@@ -333,7 +332,7 @@ class WebGLHelper extends Disposable {
 
     /**
      * @private
-     * @type {WebGLRenderingContext}
+     * @type {WebGL2RenderingContext}
      */
     this.gl_ = getOrCreateContext(this.canvasCacheKey_);
 
@@ -483,19 +482,6 @@ class WebGLHelper extends Disposable {
     const extension = this.gl_.getExtension(name);
     this.extensionCache_[name] = extension;
     return extension;
-  }
-
-  /**
-   * Will throw if the extension is not available
-   * @return {ANGLE_instanced_arrays} Extension
-   */
-  getInstancedRenderingExtension_() {
-    const ext = this.getExtension('ANGLE_instanced_arrays');
-    assert(
-      !!ext,
-      "WebGL extension 'ANGLE_instanced_arrays' is required for vector rendering",
-    );
-    return ext;
   }
 
   /**
@@ -710,8 +696,6 @@ class WebGLHelper extends Disposable {
    */
   drawElements(start, end) {
     const gl = this.gl_;
-    this.getExtension('OES_element_index_uint');
-
     const elementType = gl.UNSIGNED_INT;
     const elementSize = 4;
 
@@ -729,15 +713,12 @@ class WebGLHelper extends Disposable {
    */
   drawElementsInstanced(start, end, instanceCount) {
     const gl = this.gl_;
-    this.getExtension('OES_element_index_uint');
-    const ext = this.getInstancedRenderingExtension_();
-
     const elementType = gl.UNSIGNED_INT;
     const elementSize = 4;
 
     const numItems = end - start;
     const offsetInBytes = start * elementSize;
-    ext.drawElementsInstancedANGLE(
+    gl.drawElementsInstanced(
       gl.TRIANGLES,
       numItems,
       elementType,
@@ -747,15 +728,15 @@ class WebGLHelper extends Disposable {
 
     // reset divisor values to avoid side effects
     for (let i = 0; i < this.maxAttributeCount_; i++) {
-      ext.vertexAttribDivisorANGLE(i, 0);
+      gl.vertexAttribDivisor(i, 0);
     }
   }
 
   /**
    * Apply the successive post process passes which will eventually render to the actual canvas.
    * @param {import("../Map.js").FrameState} frameState current frame state
-   * @param {function(WebGLRenderingContext, import("../Map.js").FrameState):void} [preCompose] Called before composing.
-   * @param {function(WebGLRenderingContext, import("../Map.js").FrameState):void} [postCompose] Called before composing.
+   * @param {function(WebGL2RenderingContext, import("../Map.js").FrameState):void} [preCompose] Called before composing.
+   * @param {function(WebGL2RenderingContext, import("../Map.js").FrameState):void} [postCompose] Called before composing.
    */
   finalizeDraw(frameState, preCompose, postCompose) {
     // apply post processes using the next one as target
@@ -785,7 +766,7 @@ class WebGLHelper extends Disposable {
 
   /**
    * Get the WebGL rendering context
-   * @return {WebGLRenderingContext} The rendering context.
+   * @return {WebGL2RenderingContext} The rendering context.
    */
   getGL() {
     return this.gl_;
@@ -1126,19 +1107,17 @@ class WebGLHelper extends Disposable {
    * @private
    */
   enableAttributeArray_(attribName, size, type, stride, offset, instanced) {
+    const gl = this.gl_;
     const location = this.getAttributeLocation(attribName);
     // the attribute has not been found in the shaders or is not used; do not enable it
     if (location < 0) {
       return;
     }
-    this.gl_.enableVertexAttribArray(location);
-    this.gl_.vertexAttribPointer(location, size, type, false, stride, offset);
+    gl.enableVertexAttribArray(location);
+    gl.vertexAttribPointer(location, size, type, false, stride, offset);
     if (instanced) {
       // note: this is reset to 0 after drawElementsInstanced is called
-      this.getInstancedRenderingExtension_().vertexAttribDivisorANGLE(
-        location,
-        1,
-      );
+      gl.vertexAttribDivisor(location, 1);
     }
   }
 
