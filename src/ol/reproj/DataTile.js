@@ -396,7 +396,6 @@ class ReprojDataTile extends DataTile {
     });
 
     let willInterpolate;
-    const format = gl.RGBA;
     let textureType;
     if (dataSources[0].dataType == Float32Array) {
       textureType = gl.FLOAT; // float textures, color buffers and blending are core in WebGL 2
@@ -405,6 +404,8 @@ class ReprojDataTile extends DataTile {
       textureType = gl.UNSIGNED_BYTE;
       willInterpolate = this.interpolate;
     }
+    // WebGL2 requires a sized internalformat when type is FLOAT.
+    const internalFormat = textureType === gl.FLOAT ? gl.RGBA32F : gl.RGBA;
 
     const BANDS_PR_REPROJ = 4;
     const reprojs = Math.ceil(bandCount / BANDS_PR_REPROJ);
@@ -449,11 +450,11 @@ class ReprojDataTile extends DataTile {
         gl.texImage2D(
           gl.TEXTURE_2D,
           0,
-          format,
+          internalFormat,
           width,
           height,
           0,
-          format,
+          gl.RGBA,
           textureType,
           data,
         );
@@ -504,9 +505,8 @@ class ReprojDataTile extends DataTile {
     // the single GPU→CPU sync across every pass instead of one stall per pass.
     for (const {pbo, width, height, reproj} of reproj_results) {
       // The texture is always RGBA.
-      const rows = width;
-      const cols = height * BANDS_PR_REPROJ;
-      const data = new dataSources[0].dataType(rows * cols);
+      const stride = width * BANDS_PR_REPROJ;
+      const data = new dataSources[0].dataType(height * stride);
       gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
       gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, data);
       gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
@@ -515,7 +515,8 @@ class ReprojDataTile extends DataTile {
       let offset = reproj * BANDS_PR_REPROJ;
       for (let i = 0, len = data.length; i < len; i += BANDS_PR_REPROJ) {
         // The data read by `readPixels` is flipped in the y-axis so flip it again.
-        const flipY = (rows - 1 - ((i / cols) | 0)) * cols + (i % cols);
+        const flipY =
+          (height - 1 - Math.floor(i / stride)) * stride + (i % stride);
         dataR[offset] = data[flipY];
         dataR[offset + 1] = data[flipY + 1];
         dataR[offset + 2] = data[flipY + 2];

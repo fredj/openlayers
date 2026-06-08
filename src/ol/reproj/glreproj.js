@@ -63,7 +63,7 @@ const TRIANGLE_FRAGMENT_SHADER = `#version 300 es
 `;
 
 /**
- * Create an html canvas element and returns its webgl context.
+ * Create an html canvas element and returns its WebGL2 context.
  * @param {number} [width] Canvas width.
  * @param {number} [height] Canvas height.
  * @param {Array<HTMLCanvasElement | OffscreenCanvas>} [canvasPool] Canvas pool to take existing canvas from.
@@ -179,7 +179,7 @@ export function render(
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
-      gl.RGBA,
+      dataType === gl.FLOAT ? gl.RGBA32F : gl.RGBA,
       width,
       height,
       0,
@@ -258,7 +258,7 @@ export function render(
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
-      gl.RGBA,
+      dataType === gl.FLOAT ? gl.RGBA32F : gl.RGBA,
       stitchWidthFixed,
       stitchHeightFixed,
       0,
@@ -330,7 +330,7 @@ export function render(
   } else {
     stitchTexture = sources[0].texture;
     stitchWidth = sources[0].width;
-    stitchHeight = sources[0].width;
+    stitchHeight = sources[0].height;
   }
 
   const targetTopLeft = getTopLeft(targetExtent);
@@ -437,12 +437,7 @@ export function render(
 
     const burnval = Array.isArray(renderEdges) ? renderEdges : [0, 0, 0, 255];
     const burnvalLocation = gl.getUniformLocation(edgeProgram, 'u_val');
-    const isFloat = true;
-    if (isFloat) {
-      gl.uniform4fv(burnvalLocation, burnval);
-    } else {
-      gl.uniform4iv(burnvalLocation, burnval);
-    }
+    gl.uniform4fv(burnvalLocation, burnval);
 
     const positionLocation = gl.getAttribLocation(edgeProgram, 'a_position');
     const positionBuffer = gl.createBuffer();
