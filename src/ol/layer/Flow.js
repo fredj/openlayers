@@ -62,16 +62,17 @@ import LayerProperty from './Property.js';
  * two zoom levels worth of tiles.
  */
 
-const tileVertexShader = `
-  attribute vec2 ${BA.TEXTURE_COORD};
+const tileVertexShader = `#version 300 es
+  precision highp float;
+  in vec2 ${BA.TEXTURE_COORD};
   uniform mat4 ${BU.TILE_TRANSFORM};
   uniform float ${BU.TEXTURE_PIXEL_WIDTH};
   uniform float ${BU.TEXTURE_PIXEL_HEIGHT};
   uniform float ${BU.TEXTURE_RESOLUTION};
   uniform float ${BU.DEPTH};
 
-  varying vec2 v_textureCoord;
-  varying vec2 v_localMapCoord;
+  out vec2 v_textureCoord;
+  out vec2 v_localMapCoord;
 
   void main() {
     v_textureCoord = ${BA.TEXTURE_COORD};
@@ -83,19 +84,16 @@ const tileVertexShader = `
   }
 `;
 
-const tileFragmentShader = `
-  #ifdef GL_FRAGMENT_PRECISION_HIGH
+const tileFragmentShader = `#version 300 es
   precision highp float;
-  #else
-  precision mediump float;
-  #endif
 
   uniform vec4 ${BU.RENDER_EXTENT};
   uniform float ${U.MAX_SPEED};
   uniform sampler2D ${BU.TILE_TEXTURE_ARRAY}[1];
 
-  varying vec2 v_textureCoord;
-  varying vec2 v_localMapCoord;
+  in vec2 v_textureCoord;
+  in vec2 v_localMapCoord;
+  out vec4 fragColor;
 
   void main() {
     if (
@@ -107,24 +105,20 @@ const tileFragmentShader = `
       discard;
     }
 
-    vec4 velocity = texture2D(${BU.TILE_TEXTURE_ARRAY}[0],  v_textureCoord);
-    gl_FragColor = vec4((velocity.xy + ${U.MAX_SPEED}) / (2.0 * ${U.MAX_SPEED}), 0, 1);
+    vec4 velocity = texture(${BU.TILE_TEXTURE_ARRAY}[0],  v_textureCoord);
+    fragColor = vec4((velocity.xy + ${U.MAX_SPEED}) / (2.0 * ${U.MAX_SPEED}), 0, 1);
   }
 `;
 
 /**
  * Sets up a varying position for rendering textures.
  */
-const quadVertexShader = `
-  #ifdef GL_FRAGMENT_PRECISION_HIGH
+const quadVertexShader = `#version 300 es
   precision highp float;
-  #else
-  precision mediump float;
-  #endif
 
-  attribute vec2 ${A.POSITION};
+  in vec2 ${A.POSITION};
 
-  varying vec2 ${V.POSITION};
+  out vec2 ${V.POSITION};
 
   void main() {
     ${V.POSITION} = ${A.POSITION};
@@ -135,21 +129,18 @@ const quadVertexShader = `
 /**
  * Sampes a texture and renders it with a new opacity.
  */
-const textureFragmentShader = `
-  #ifdef GL_FRAGMENT_PRECISION_HIGH
+const textureFragmentShader = `#version 300 es
   precision highp float;
-  #else
-  precision mediump float;
-  #endif
 
   uniform sampler2D ${U.TEXTURE};
   uniform float ${U.OPACITY};
 
-  varying vec2 ${V.POSITION};
+  in vec2 ${V.POSITION};
+  out vec4 fragColor;
 
   void main() {
-    vec4 color = texture2D(${U.TEXTURE}, 1.0 - ${V.POSITION});
-    gl_FragColor = vec4(floor(255.0 * color * ${U.OPACITY}) / 255.0);
+    vec4 color = texture(${U.TEXTURE}, 1.0 - ${V.POSITION});
+    fragColor = vec4(floor(255.0 * color * ${U.OPACITY}) / 255.0);
   }
 `;
 
@@ -157,12 +148,8 @@ const textureFragmentShader = `
  * Samples current particle positions, determines new positions based on velocity, and
  * encodes the new position as a color.
  */
-const particlePositionFragmentShader = `
-  #ifdef GL_FRAGMENT_PRECISION_HIGH
+const particlePositionFragmentShader = `#version 300 es
   precision highp float;
-  #else
-  precision mediump float;
-  #endif
 
   uniform sampler2D ${U.POSITION_TEXTURE};
   uniform sampler2D ${U.VELOCITY_TEXTURE};
@@ -173,7 +160,8 @@ const particlePositionFragmentShader = `
   uniform vec2 ${U.ROTATION};
   uniform vec2 ${U.VIEWPORT_SIZE_PX};
 
-  varying vec2 ${V.POSITION};
+  in vec2 ${V.POSITION};
+  out vec4 fragColor;
 
   // pseudo-random generator
   const vec3 randConstants = vec3(12.9898, 78.233, 4375.85453);
@@ -184,7 +172,7 @@ const particlePositionFragmentShader = `
   }
 
   void main() {
-    vec4 positionColor = texture2D(${U.POSITION_TEXTURE}, ${V.POSITION});
+    vec4 positionColor = texture(${U.POSITION_TEXTURE}, ${V.POSITION});
 
     // decode particle position from pixel RGBA
     vec2 particlePosition = vec2(
@@ -192,7 +180,7 @@ const particlePositionFragmentShader = `
       positionColor.g / 255.0 + positionColor.a
     );
 
-    vec4 velocityColor = texture2D(${U.VELOCITY_TEXTURE}, particlePosition);
+    vec4 velocityColor = texture(${U.VELOCITY_TEXTURE}, particlePosition);
     if (velocityColor.a == 0.0) {
       discard;
     }
@@ -224,7 +212,7 @@ const particlePositionFragmentShader = `
     particlePosition = mix(particlePosition, randomPosition, drop);
 
     // encode the new particle position back into RGBA
-    gl_FragColor = vec4(
+    fragColor = vec4(
       fract(particlePosition * 255.0),
       floor(particlePosition * 255.0) / 255.0
     );
@@ -235,22 +223,18 @@ const particlePositionFragmentShader = `
  * Samples the particle position texture to decode the particle position
  * based on pixel color.
  */
-const particleColorVertexShader = `
-  #ifdef GL_FRAGMENT_PRECISION_HIGH
+const particleColorVertexShader = `#version 300 es
   precision highp float;
-  #else
-  precision mediump float;
-  #endif
 
-  attribute float ${A.INDEX};
+  in float ${A.INDEX};
 
   uniform sampler2D ${U.POSITION_TEXTURE};
   uniform float ${U.PARTICLE_COUNT_SQRT};
 
-  varying vec2 ${V.POSITION};
+  out vec2 ${V.POSITION};
 
   void main() {
-    vec4 color = texture2D(
+    vec4 color = texture(
       ${U.POSITION_TEXTURE},
       vec2(
         fract(${A.INDEX} / ${U.PARTICLE_COUNT_SQRT}),
@@ -332,12 +316,8 @@ function parseStyle(style) {
     },
   );
 
-  const particleColorFragmentShader = `
-    #ifdef GL_FRAGMENT_PRECISION_HIGH
+  const particleColorFragmentShader = `#version 300 es
     precision highp float;
-    #else
-    precision mediump float;
-    #endif
 
     uniform sampler2D ${U.VELOCITY_TEXTURE};
     uniform float ${U.MAX_SPEED};
@@ -345,12 +325,13 @@ function parseStyle(style) {
 
     ${uniformDeclarations.join('\n')}
 
-    varying vec2 ${V.POSITION};
-    
+    in vec2 ${V.POSITION};
+    out vec4 fragColor;
+
     ${functionDefintions.join('\n')}
 
     void main() {
-      vec4 velocityColor = texture2D(${U.VELOCITY_TEXTURE}, ${V.POSITION});
+      vec4 velocityColor = texture(${U.VELOCITY_TEXTURE}, ${V.POSITION});
 
       float vx = mix(-${U.MAX_SPEED}, ${U.MAX_SPEED}, velocityColor.r);
       float vy = mix(-${U.MAX_SPEED}, ${U.MAX_SPEED}, velocityColor.g);
@@ -370,7 +351,7 @@ function parseStyle(style) {
         discard;
       }
 
-      gl_FragColor = color;
+      fragColor = color;
     }
   `;
 
