@@ -399,13 +399,8 @@ class ReprojDataTile extends DataTile {
     const format = gl.RGBA;
     let textureType;
     if (dataSources[0].dataType == Float32Array) {
-      textureType = gl.FLOAT;
-      gl.getExtension('WEBGL_color_buffer_float');
-      gl.getExtension('OES_texture_float');
-      gl.getExtension('EXT_float_blend');
-      const extension = gl.getExtension('OES_texture_float_linear');
-      const canInterpolate = extension !== null;
-      willInterpolate = canInterpolate && this.interpolate;
+      textureType = gl.FLOAT; // float textures, color buffers and blending are core in WebGL 2
+      willInterpolate = this.interpolate;
     } else {
       textureType = gl.UNSIGNED_BYTE;
       willInterpolate = this.interpolate;
