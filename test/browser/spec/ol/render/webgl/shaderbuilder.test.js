@@ -29,9 +29,9 @@ in vec2 a_hitColor;
 out vec2 v_texCoord;
 out vec2 v_quadCoord;
 flat out vec4 v_hitColor;
-out vec2 v_centerPx;
-out float v_angle;
-out vec2 v_quadSizePx;
+flat out vec2 v_centerPx;
+flat out float v_angle;
+flat out vec2 v_quadSizePx;
 
 in float a_opacity;
 out float v_opacity;
@@ -92,9 +92,9 @@ in vec2 a_hitColor;
 out vec2 v_texCoord;
 out vec2 v_quadCoord;
 flat out vec4 v_hitColor;
-out vec2 v_centerPx;
-out float v_angle;
-out vec2 v_quadSizePx;
+flat out vec2 v_centerPx;
+flat out float v_angle;
+flat out vec2 v_quadSizePx;
 
 in vec2 a_myAttr;
 out vec2 v_myAttr;
@@ -150,9 +150,9 @@ in vec2 a_hitColor;
 out vec2 v_texCoord;
 out vec2 v_quadCoord;
 flat out vec4 v_hitColor;
-out vec2 v_centerPx;
-out float v_angle;
-out vec2 v_quadSizePx;
+flat out vec2 v_centerPx;
+flat out float v_angle;
+flat out vec2 v_quadSizePx;
 
 
 
@@ -206,9 +206,9 @@ in vec2 a_hitColor;
 out vec2 v_texCoord;
 out vec2 v_quadCoord;
 flat out vec4 v_hitColor;
-out vec2 v_centerPx;
-out float v_angle;
-out vec2 v_quadSizePx;
+flat out vec2 v_centerPx;
+flat out float v_angle;
+flat out vec2 v_quadSizePx;
 
 
 
@@ -269,9 +269,9 @@ void main(void) {
 
 in vec2 v_texCoord;
 flat in vec4 v_hitColor;
-in vec2 v_centerPx;
-in float v_angle;
-in vec2 v_quadSizePx;
+flat in vec2 v_centerPx;
+flat in float v_angle;
+flat in vec2 v_quadSizePx;
 in float v_opacity;
 in vec3 v_test;
 
@@ -308,9 +308,9 @@ uniform float u_myUniform;
 uniform vec2 u_myUniform2;
 in vec2 v_texCoord;
 flat in vec4 v_hitColor;
-in vec2 v_centerPx;
-in float v_angle;
-in vec2 v_quadSizePx;
+flat in vec2 v_centerPx;
+flat in float v_angle;
+flat in vec2 v_quadSizePx;
 
 
 out vec4 fragColor;
@@ -372,15 +372,15 @@ in float a_distanceHigh;
 in vec2 a_joinAngles;
 in vec2 a_hitColor;
 
-out vec2 v_segmentStartPx;
-out vec2 v_segmentEndPx;
-out float v_angleStart;
-out float v_angleEnd;
-out float v_width;
+flat out vec2 v_segmentStartPx;
+flat out vec2 v_segmentEndPx;
+flat out float v_angleStart;
+flat out float v_angleEnd;
+flat out float v_width;
 flat out vec4 v_hitColor;
 out float v_distancePx;
-out float v_measureStart;
-out float v_measureEnd;
+flat out float v_measureStart;
+flat out float v_measureEnd;
 
 in float a_opacity;
 out float v_opacity;
@@ -488,15 +488,15 @@ void main(void) {
       it('generates a stroke fragment shader (with attribute and uniform)', () => {
         expect(builder.getStrokeFragmentShader()).to.eql(`${COMMON_HEADER}
 uniform float u_myUniform;
-in vec2 v_segmentStartPx;
-in vec2 v_segmentEndPx;
-in float v_angleStart;
-in float v_angleEnd;
-in float v_width;
+flat in vec2 v_segmentStartPx;
+flat in vec2 v_segmentEndPx;
+flat in float v_angleStart;
+flat in float v_angleEnd;
+flat in float v_width;
 flat in vec4 v_hitColor;
 in float v_distancePx;
-in float v_measureStart;
-in float v_measureEnd;
+flat in float v_measureStart;
+flat in float v_measureEnd;
 in float v_opacity;
 in vec3 v_test;
 in vec2 v_myAttr;
@@ -666,8 +666,8 @@ in vec2 a_position;
 in vec2 a_hitColor;
 
 flat out vec4 v_hitColor;
-out vec2 v_patternOriginPx;
-out vec2 v_patternSizePx;
+flat out vec2 v_patternOriginPx;
+flat out vec2 v_patternSizePx;
 
 in float a_opacity;
 out float v_opacity;
@@ -697,8 +697,8 @@ in vec2 a_position;
 in vec2 a_hitColor;
 
 flat out vec4 v_hitColor;
-out vec2 v_patternOriginPx;
-out vec2 v_patternSizePx;
+flat out vec2 v_patternOriginPx;
+flat out vec2 v_patternSizePx;
 
 
 
@@ -746,8 +746,8 @@ void main(void) {
       expect(builder.getFillFragmentShader()).to.eql(`${COMMON_HEADER}
 uniform float u_myUniform;
 flat in vec4 v_hitColor;
-in vec2 v_patternOriginPx;
-in vec2 v_patternSizePx;
+flat in vec2 v_patternOriginPx;
+flat in vec2 v_patternSizePx;
 in float v_opacity;
 in vec3 v_test;
 in vec2 v_myAttr;
