@@ -642,17 +642,18 @@ ${
 
     return `${COMMON_HEADER}
 ${this.uniforms_.map((uniform) => `uniform ${uniform.type} ${uniform.name};`).join('\n')}
-varying vec2 v_texCoord;
-varying vec4 v_hitColor;
-varying vec2 v_centerPx;
-varying float v_angle;
-varying vec2 v_quadSizePx;
+in vec2 v_texCoord;
+in vec4 v_hitColor;
+in vec2 v_centerPx;
+in float v_angle;
+in vec2 v_quadSizePx;
 ${this.attributes_
   .map(
-    (attribute) => `varying ${attribute.varyingType} ${attribute.varyingName};`,
+    (attribute) => `in ${attribute.varyingType} ${attribute.varyingName};`,
   )
   .join('\n')}
 ${this.fragmentShaderFunctions_.join('\n')}
+out vec4 fragColor;
 
 void main(void) {
 ${this.attributes_
@@ -666,11 +667,11 @@ ${this.fragmentDiscardExpression_ ? `  if (${this.fragmentDiscardExpression_}) {
   float c = cos(v_angle);
   float s = sin(v_angle);
   coordsPx = vec2(c * coordsPx.x - s * coordsPx.y, s * coordsPx.x + c * coordsPx.y);
-  gl_FragColor = ${this.symbolColorExpression_};
-  gl_FragColor.rgb *= gl_FragColor.a;
+  fragColor = ${this.symbolColorExpression_};
+  fragColor.rgb *= fragColor.a;
   if (u_hitDetection > 0) {
-    if (gl_FragColor.a < 0.05) { discard; };
-    gl_FragColor = v_hitColor;
+    if (fragColor.a < 0.05) { discard; };
+    fragColor = v_hitColor;
   }
 }`;
   }
@@ -818,21 +819,22 @@ ${
 
     return `${COMMON_HEADER}
 ${this.uniforms_.map((uniform) => `uniform ${uniform.type} ${uniform.name};`).join('\n')}
-varying vec2 v_segmentStartPx;
-varying vec2 v_segmentEndPx;
-varying float v_angleStart;
-varying float v_angleEnd;
-varying float v_width;
-varying vec4 v_hitColor;
-varying float v_distancePx;
-varying float v_measureStart;
-varying float v_measureEnd;
+in vec2 v_segmentStartPx;
+in vec2 v_segmentEndPx;
+in float v_angleStart;
+in float v_angleEnd;
+in float v_width;
+in vec4 v_hitColor;
+in float v_distancePx;
+in float v_measureStart;
+in float v_measureEnd;
 ${this.attributes_
   .map(
-    (attribute) => `varying ${attribute.varyingType} ${attribute.varyingName};`,
+    (attribute) => `in ${attribute.varyingType} ${attribute.varyingName};`,
   )
   .join('\n')}
 ${this.fragmentShaderFunctions_.join('\n')}
+out vec4 fragColor;
 
 bool isCap(float joinAngle) {
   return joinAngle < -0.1;
@@ -966,12 +968,12 @@ ${this.fragmentDiscardExpression_ ? `  if (${this.fragmentDiscardExpression_}) {
 
   vec4 color = ${this.strokeColorExpression_};
   color.a *= smoothstep(0.5, -0.5, distanceField);
-  gl_FragColor = color;
-  gl_FragColor.a *= u_globalAlpha;
-  gl_FragColor.rgb *= gl_FragColor.a;
+  fragColor = color;
+  fragColor.a *= u_globalAlpha;
+  fragColor.rgb *= fragColor.a;
   if (u_hitDetection > 0) {
-    if (gl_FragColor.a < 0.1) { discard; };
-    gl_FragColor = v_hitColor;
+    if (fragColor.a < 0.1) { discard; };
+    fragColor = v_hitColor;
   }
 }`;
   }
@@ -1052,15 +1054,16 @@ ${
 
     return `${COMMON_HEADER}
 ${this.uniforms_.map((uniform) => `uniform ${uniform.type} ${uniform.name};`).join('\n')}
-varying vec4 v_hitColor;
-varying vec2 v_patternOriginPx;
-varying vec2 v_patternSizePx;
+in vec4 v_hitColor;
+in vec2 v_patternOriginPx;
+in vec2 v_patternSizePx;
 ${this.attributes_
   .map(
-    (attribute) => `varying ${attribute.varyingType} ${attribute.varyingName};`,
+    (attribute) => `in ${attribute.varyingType} ${attribute.varyingName};`,
   )
   .join('\n')}
 ${this.fragmentShaderFunctions_.join('\n')}
+out vec4 fragColor;
 
 void main(void) {
 ${this.attributes_
@@ -1082,12 +1085,12 @@ ${this.attributes_
     discard;
   }
 ${this.fragmentDiscardExpression_ ? `  if (${this.fragmentDiscardExpression_}) { discard; }` : ''}
-  gl_FragColor = ${this.fillColorExpression_};
-  gl_FragColor.a *= u_globalAlpha;
-  gl_FragColor.rgb *= gl_FragColor.a;
+  fragColor = ${this.fillColorExpression_};
+  fragColor.a *= u_globalAlpha;
+  fragColor.rgb *= fragColor.a;
   if (u_hitDetection > 0) {
-    if (gl_FragColor.a < 0.1) { discard; };
-    gl_FragColor = v_hitColor;
+    if (fragColor.a < 0.1) { discard; };
+    fragColor = v_hitColor;
   }
 }`;
   }
