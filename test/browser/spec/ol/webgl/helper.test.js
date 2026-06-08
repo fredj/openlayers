@@ -407,16 +407,16 @@ describe('ol/webgl/WebGLHelper', function () {
       h.useProgram(
         h.getProgram(
           FRAGMENT_SHADER,
-          `
-        precision mediump float;
+          `#version 300 es
+        precision highp float;
 
         uniform mat4 u_projectionMatrix;
         uniform mat4 u_offsetScaleMatrix;
         uniform mat4 u_offsetRotateMatrix;
 
-        attribute vec3 attr1;
-        attribute vec2 attr2;
-        attribute float attr3;
+        in vec3 attr1;
+        in vec2 attr2;
+        in float attr3;
         uniform float u_test;
 
         void main(void) {
