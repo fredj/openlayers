@@ -408,6 +408,12 @@ class ReprojDataTile extends DataTile {
 
     const BANDS_PR_REPROJ = 4;
     const reprojs = Math.ceil(bandCount / BANDS_PR_REPROJ);
+    const bytesPerElement = dataSources[0].dataType.BYTES_PER_ELEMENT;
+
+    // Phase 1: issue all render passes and queue async readbacks into PBOs.
+    // This lets the GPU pipeline all passes before any CPU readback stall.
+    /** @type {Array<{pbo: WebGLBuffer, width: number, height: number, reproj: number}>} */
+    const reproj_results = [];
     for (let reproj = reprojs - 1; reproj >= 0; --reproj) {
       const sources = [];
       for (let i = 0, len = dataSources.length; i < len; ++i) {
@@ -477,12 +483,34 @@ class ReprojDataTile extends DataTile {
         willInterpolate,
       );
 
+      // Queue async pixel readback into a PBO. With PIXEL_PACK_BUFFER bound,
+      // readPixels does not block — the GPU writes directly into the buffer.
+      const pbo = gl.createBuffer();
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+      gl.bufferData(
+        gl.PIXEL_PACK_BUFFER,
+        width * height * BANDS_PR_REPROJ * bytesPerElement,
+        gl.STREAM_READ,
+      );
+      gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+      gl.readPixels(0, 0, width, height, gl.RGBA, textureType, 0);
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+
+      reproj_results.push({pbo, width, height, reproj});
+    }
+
+    // Phase 2: retrieve results from PBOs and assemble the output array.
+    // All render passes have been submitted, so getBufferSubData amortises
+    // the single GPU→CPU sync across every pass instead of one stall per pass.
+    for (const {pbo, width, height, reproj} of reproj_results) {
       // The texture is always RGBA.
       const rows = width;
       const cols = height * BANDS_PR_REPROJ;
       const data = new dataSources[0].dataType(rows * cols);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-      gl.readPixels(0, 0, width, height, gl.RGBA, textureType, data);
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+      gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, data);
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+      gl.deleteBuffer(pbo);
 
       let offset = reproj * BANDS_PR_REPROJ;
       for (let i = 0, len = data.length; i < len; i += BANDS_PR_REPROJ) {
