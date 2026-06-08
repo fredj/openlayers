@@ -271,7 +271,7 @@ function releaseCanvas(key) {
  *   Attributes are used to specify these uses. Specify the attribute names with
  *   {@link module:ol/webgl/Helper~WebGLHelper#enableAttributes} (see code snippet below).
  *
- *   Please note that you will have to specify the type and offset of the attributes in the data array. You can refer to the documentation of [WebGL2RenderingContext.vertexAttribPointer](https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext/vertexAttribPointer) for more explanation.
+ *   Please note that you will have to specify the type and offset of the attributes in the data array. You can refer to the documentation of [WebGLRenderingContext.vertexAttribPointer](https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/vertexAttribPointer) for more explanation.
  *   ```js
  *   // here we indicate that the data array has the following structure:
  *   // [posX, posY, offsetX, offsetY, texCoordU, texCoordV, posX, posY, ...]
@@ -439,6 +439,12 @@ class WebGLHelper extends Disposable {
     this.maxAttributeCount_ = this.gl_.getParameter(
       this.gl_.MAX_VERTEX_ATTRIBS,
     );
+
+    /**
+     * @type {Set<number>}
+     * @private
+     */
+    this.enabledAttributeLocations_ = new Set();
   }
 
   /**
@@ -650,6 +656,7 @@ class WebGLHelper extends Disposable {
     this.bindBuffer(buffer);
     const index = this.getAttributeLocation(attributeName);
     gl.enableVertexAttribArray(index);
+    this.enabledAttributeLocations_.add(index);
     gl.vertexAttribPointer(index, size, gl.FLOAT, false, 0, 0);
   }
 
@@ -1086,13 +1093,14 @@ class WebGLHelper extends Disposable {
   }
 
   /**
-   * Disable all vertex attributes.
+   * Disable all currently enabled vertex attributes.
    * @private
    */
   disableAllAttributes_() {
-    for (let i = 0; i < this.maxAttributeCount_; i++) {
-      this.gl_.disableVertexAttribArray(i);
+    for (const location of this.enabledAttributeLocations_) {
+      this.gl_.disableVertexAttribArray(location);
     }
+    this.enabledAttributeLocations_.clear();
   }
 
   /**
@@ -1114,6 +1122,7 @@ class WebGLHelper extends Disposable {
       return;
     }
     gl.enableVertexAttribArray(location);
+    this.enabledAttributeLocations_.add(location);
     gl.vertexAttribPointer(location, size, type, false, stride, offset);
     if (instanced) {
       // note: this is reset to 0 after drawElementsInstanced is called
@@ -1173,6 +1182,7 @@ class WebGLHelper extends Disposable {
   handleWebGLContextLost(event) {
     clear(this.bufferCache_);
     this.currentProgram_ = null;
+    this.enabledAttributeLocations_.clear();
 
     event.preventDefault();
   }
