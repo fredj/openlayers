@@ -22,21 +22,21 @@ describe('ol.webgl.ShaderBuilder', () => {
 
       expect(builder.getSymbolVertexShader()).to.eql(`${COMMON_HEADER}
 
-attribute vec2 a_position;
-attribute vec2 a_localPosition;
-attribute vec2 a_hitColor;
+in vec2 a_position;
+in vec2 a_localPosition;
+in vec2 a_hitColor;
 
-varying vec2 v_texCoord;
-varying vec2 v_quadCoord;
-varying vec4 v_hitColor;
-varying vec2 v_centerPx;
-varying float v_angle;
-varying vec2 v_quadSizePx;
+out vec2 v_texCoord;
+out vec2 v_quadCoord;
+out vec4 v_hitColor;
+out vec2 v_centerPx;
+out float v_angle;
+out vec2 v_quadSizePx;
 
-attribute float a_opacity;
-varying float v_opacity;
-attribute vec3 a_test;
-varying vec3 v_test;
+in float a_opacity;
+out float v_opacity;
+in vec3 a_test;
+out vec3 v_test;
 
 vec2 pxToScreen(vec2 coordPx) {
   vec2 scaled = coordPx / u_viewportSizePx / 0.5;
@@ -85,19 +85,19 @@ void main(void) {
 
       expect(builder.getSymbolVertexShader()).to.eql(`${COMMON_HEADER}
 uniform float u_myUniform;
-attribute vec2 a_position;
-attribute vec2 a_localPosition;
-attribute vec2 a_hitColor;
+in vec2 a_position;
+in vec2 a_localPosition;
+in vec2 a_hitColor;
 
-varying vec2 v_texCoord;
-varying vec2 v_quadCoord;
-varying vec4 v_hitColor;
-varying vec2 v_centerPx;
-varying float v_angle;
-varying vec2 v_quadSizePx;
+out vec2 v_texCoord;
+out vec2 v_quadCoord;
+out vec4 v_hitColor;
+out vec2 v_centerPx;
+out float v_angle;
+out vec2 v_quadSizePx;
 
-attribute vec2 a_myAttr;
-varying vec2 v_myAttr;
+in vec2 a_myAttr;
+out vec2 v_myAttr;
 
 vec2 pxToScreen(vec2 coordPx) {
   vec2 scaled = coordPx / u_viewportSizePx / 0.5;
@@ -143,16 +143,16 @@ void main(void) {
 
       expect(builder.getSymbolVertexShader()).to.eql(`${COMMON_HEADER}
 
-attribute vec2 a_position;
-attribute vec2 a_localPosition;
-attribute vec2 a_hitColor;
+in vec2 a_position;
+in vec2 a_localPosition;
+in vec2 a_hitColor;
 
-varying vec2 v_texCoord;
-varying vec2 v_quadCoord;
-varying vec4 v_hitColor;
-varying vec2 v_centerPx;
-varying float v_angle;
-varying vec2 v_quadSizePx;
+out vec2 v_texCoord;
+out vec2 v_quadCoord;
+out vec4 v_hitColor;
+out vec2 v_centerPx;
+out float v_angle;
+out vec2 v_quadSizePx;
 
 
 
@@ -199,16 +199,16 @@ void main(void) {
 
       expect(builder.getSymbolVertexShader()).to.eql(`${COMMON_HEADER}
 
-attribute vec2 a_position;
-attribute vec2 a_localPosition;
-attribute vec2 a_hitColor;
+in vec2 a_position;
+in vec2 a_localPosition;
+in vec2 a_hitColor;
 
-varying vec2 v_texCoord;
-varying vec2 v_quadCoord;
-varying vec4 v_hitColor;
-varying vec2 v_centerPx;
-varying float v_angle;
-varying vec2 v_quadSizePx;
+out vec2 v_texCoord;
+out vec2 v_quadCoord;
+out vec4 v_hitColor;
+out vec2 v_centerPx;
+out float v_angle;
+out vec2 v_quadSizePx;
 
 
 
@@ -267,14 +267,15 @@ void main(void) {
 
       expect(builder.getSymbolFragmentShader()).to.eql(`${COMMON_HEADER}
 
-varying vec2 v_texCoord;
-varying vec4 v_hitColor;
-varying vec2 v_centerPx;
-varying float v_angle;
-varying vec2 v_quadSizePx;
-varying float v_opacity;
-varying vec3 v_test;
+in vec2 v_texCoord;
+in vec4 v_hitColor;
+in vec2 v_centerPx;
+in float v_angle;
+in vec2 v_quadSizePx;
+in float v_opacity;
+in vec3 v_test;
 
+out vec4 fragColor;
 
 void main(void) {
   float a_opacity = v_opacity; // assign to original attribute name
@@ -284,11 +285,11 @@ void main(void) {
   float c = cos(v_angle);
   float s = sin(v_angle);
   coordsPx = vec2(c * coordsPx.x - s * coordsPx.y, s * coordsPx.x + c * coordsPx.y);
-  gl_FragColor = vec4(0.3137254901960784, 0.0, 1.0, 1.0);
-  gl_FragColor.rgb *= gl_FragColor.a;
+  fragColor = vec4(0.3137254901960784, 0.0, 1.0, 1.0);
+  fragColor.rgb *= fragColor.a;
   if (u_hitDetection > 0) {
-    if (gl_FragColor.a < 0.05) { discard; };
-    gl_FragColor = v_hitColor;
+    if (fragColor.a < 0.05) { discard; };
+    fragColor = v_hitColor;
   }
 }`);
     });
@@ -305,13 +306,14 @@ void main(void) {
       expect(builder.getSymbolFragmentShader()).to.eql(`${COMMON_HEADER}
 uniform float u_myUniform;
 uniform vec2 u_myUniform2;
-varying vec2 v_texCoord;
-varying vec4 v_hitColor;
-varying vec2 v_centerPx;
-varying float v_angle;
-varying vec2 v_quadSizePx;
+in vec2 v_texCoord;
+in vec4 v_hitColor;
+in vec2 v_centerPx;
+in float v_angle;
+in vec2 v_quadSizePx;
 
 
+out vec4 fragColor;
 
 void main(void) {
 
@@ -320,11 +322,11 @@ void main(void) {
   float c = cos(v_angle);
   float s = sin(v_angle);
   coordsPx = vec2(c * coordsPx.x - s * coordsPx.y, s * coordsPx.x + c * coordsPx.y);
-  gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-  gl_FragColor.rgb *= gl_FragColor.a;
+  fragColor = vec4(1.0, 1.0, 1.0, 1.0);
+  fragColor.rgb *= fragColor.a;
   if (u_hitDetection > 0) {
-    if (gl_FragColor.a < 0.05) { discard; };
-    gl_FragColor = v_hitColor;
+    if (fragColor.a < 0.05) { discard; };
+    fragColor = v_hitColor;
   }
 }`);
     });
@@ -359,33 +361,33 @@ void main(void) {
       it('generates a stroke vertex shader (with uniforms, varying and attributes)', () => {
         expect(builder.getStrokeVertexShader()).to.eql(`${COMMON_HEADER}
 uniform float u_myUniform;
-attribute vec2 a_segmentStart;
-attribute vec2 a_segmentEnd;
-attribute vec2 a_localPosition;
-attribute float a_measureStart;
-attribute float a_measureEnd;
-attribute float a_angleTangentSum;
-attribute float a_distanceLow;
-attribute float a_distanceHigh;
-attribute vec2 a_joinAngles;
-attribute vec2 a_hitColor;
+in vec2 a_segmentStart;
+in vec2 a_segmentEnd;
+in vec2 a_localPosition;
+in float a_measureStart;
+in float a_measureEnd;
+in float a_angleTangentSum;
+in float a_distanceLow;
+in float a_distanceHigh;
+in vec2 a_joinAngles;
+in vec2 a_hitColor;
 
-varying vec2 v_segmentStartPx;
-varying vec2 v_segmentEndPx;
-varying float v_angleStart;
-varying float v_angleEnd;
-varying float v_width;
-varying vec4 v_hitColor;
-varying float v_distancePx;
-varying float v_measureStart;
-varying float v_measureEnd;
+out vec2 v_segmentStartPx;
+out vec2 v_segmentEndPx;
+out float v_angleStart;
+out float v_angleEnd;
+out float v_width;
+out vec4 v_hitColor;
+out float v_distancePx;
+out float v_measureStart;
+out float v_measureEnd;
 
-attribute float a_opacity;
-varying float v_opacity;
-attribute vec3 a_test;
-varying vec3 v_test;
-attribute vec2 a_myAttr;
-varying vec2 v_myAttr;
+in float a_opacity;
+out float v_opacity;
+in vec3 a_test;
+out vec3 v_test;
+in vec2 a_myAttr;
+out vec2 v_myAttr;
 
 
 vec4 pxToScreen(vec2 pxPos) {
@@ -486,19 +488,20 @@ void main(void) {
       it('generates a stroke fragment shader (with attribute and uniform)', () => {
         expect(builder.getStrokeFragmentShader()).to.eql(`${COMMON_HEADER}
 uniform float u_myUniform;
-varying vec2 v_segmentStartPx;
-varying vec2 v_segmentEndPx;
-varying float v_angleStart;
-varying float v_angleEnd;
-varying float v_width;
-varying vec4 v_hitColor;
-varying float v_distancePx;
-varying float v_measureStart;
-varying float v_measureEnd;
-varying float v_opacity;
-varying vec3 v_test;
-varying vec2 v_myAttr;
+in vec2 v_segmentStartPx;
+in vec2 v_segmentEndPx;
+in float v_angleStart;
+in float v_angleEnd;
+in float v_width;
+in vec4 v_hitColor;
+in float v_distancePx;
+in float v_measureStart;
+in float v_measureEnd;
+in float v_opacity;
+in vec3 v_test;
+in vec2 v_myAttr;
 
+out vec4 fragColor;
 
 bool isCap(float joinAngle) {
   return joinAngle < -0.1;
@@ -629,12 +632,12 @@ void main(void) {
 
   vec4 color = vec4(0.3137254901960784, 0.0, 1.0, 1.0);
   color.a *= smoothstep(0.5, -0.5, distanceField);
-  gl_FragColor = color;
-  gl_FragColor.a *= u_globalAlpha;
-  gl_FragColor.rgb *= gl_FragColor.a;
+  fragColor = color;
+  fragColor.a *= u_globalAlpha;
+  fragColor.rgb *= fragColor.a;
   if (u_hitDetection > 0) {
-    if (gl_FragColor.a < 0.1) { discard; };
-    gl_FragColor = v_hitColor;
+    if (fragColor.a < 0.1) { discard; };
+    fragColor = v_hitColor;
   }
 }`);
       });
@@ -659,19 +662,19 @@ void main(void) {
 
       expect(builder.getFillVertexShader()).to.eql(`${COMMON_HEADER}
 uniform float u_myUniform;
-attribute vec2 a_position;
-attribute vec2 a_hitColor;
+in vec2 a_position;
+in vec2 a_hitColor;
 
-varying vec4 v_hitColor;
-varying vec2 v_patternOriginPx;
-varying vec2 v_patternSizePx;
+out vec4 v_hitColor;
+out vec2 v_patternOriginPx;
+out vec2 v_patternSizePx;
 
-attribute float a_opacity;
-varying float v_opacity;
-attribute vec3 a_test;
-varying vec3 v_test;
-attribute vec2 a_myAttr;
-varying vec2 v_myAttr;
+in float a_opacity;
+out float v_opacity;
+in vec3 a_test;
+out vec3 v_test;
+in vec2 a_myAttr;
+out vec2 v_myAttr;
 
 void main(void) {
   gl_Position = u_projectionMatrix * vec4(a_position, u_depth, 1.0);
@@ -690,12 +693,12 @@ void main(void) {
 
       expect(builder.getFillVertexShader()).to.eql(`${COMMON_HEADER}
 
-attribute vec2 a_position;
-attribute vec2 a_hitColor;
+in vec2 a_position;
+in vec2 a_hitColor;
 
-varying vec4 v_hitColor;
-varying vec2 v_patternOriginPx;
-varying vec2 v_patternSizePx;
+out vec4 v_hitColor;
+out vec2 v_patternOriginPx;
+out vec2 v_patternSizePx;
 
 
 
@@ -742,13 +745,14 @@ void main(void) {
 
       expect(builder.getFillFragmentShader()).to.eql(`${COMMON_HEADER}
 uniform float u_myUniform;
-varying vec4 v_hitColor;
-varying vec2 v_patternOriginPx;
-varying vec2 v_patternSizePx;
-varying float v_opacity;
-varying vec3 v_test;
-varying vec2 v_myAttr;
+in vec4 v_hitColor;
+in vec2 v_patternOriginPx;
+in vec2 v_patternSizePx;
+in float v_opacity;
+in vec3 v_test;
+in vec2 v_myAttr;
 
+out vec4 fragColor;
 
 void main(void) {
   float a_opacity = v_opacity; // assign to original attribute name
@@ -767,12 +771,12 @@ void main(void) {
     discard;
   }
   if (u_myUniform > 0.5) { discard; }
-  gl_FragColor = vec4(0.3137254901960784, 0.0, 1.0, 1.0);
-  gl_FragColor.a *= u_globalAlpha;
-  gl_FragColor.rgb *= gl_FragColor.a;
+  fragColor = vec4(0.3137254901960784, 0.0, 1.0, 1.0);
+  fragColor.a *= u_globalAlpha;
+  fragColor.rgb *= fragColor.a;
   if (u_hitDetection > 0) {
-    if (gl_FragColor.a < 0.1) { discard; };
-    gl_FragColor = v_hitColor;
+    if (fragColor.a < 0.1) { discard; };
+    fragColor = v_hitColor;
   }
 }`);
     });
