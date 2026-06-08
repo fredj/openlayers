@@ -227,43 +227,28 @@ export const registerFont = (function () {
    */
   async function isAvailable(fontSpec) {
     await fontFaceSet.ready;
+    const fontFaces = await fontFaceSet.load(fontSpec);
+    if (fontFaces.length === 0) {
+      return false;
+    }
     const font = getFontParameters(fontSpec);
     const checkFamily = font.families[0].toLowerCase();
     const checkWeight = font.weight;
-    /** @type {Array<FontFace>} */
-    const matching = [];
-    fontFaceSet.forEach(
+    return fontFaces.some(
       /**
-       * @param {FontFace} f Font face.
+       * @param {import('../css.js').FontParameters} f Font.
+       * @return {boolean} Font matches.
        */
       (f) => {
         const family = f.family.replace(/^['"]|['"]$/g, '').toLowerCase();
         const weight = fontWeights[f.weight] || f.weight;
-        if (
+        return (
           family === checkFamily &&
           f.style === font.style &&
           weight == checkWeight
-        ) {
-          matching.push(f);
-        }
+        );
       },
     );
-    if (matching.length === 0) {
-      return false;
-    }
-    // Load each matching face with `FontFace.load()` instead of querying the
-    // set with `FontFaceSet.load()`. The latter only resolves faces whose
-    // `unicode-range` covers its (default) test string, so subset fonts -
-    // e.g. those served by Google Fonts - would never be detected.
-    const loaded = await Promise.all(
-      matching.map((f) =>
-        f.load().then(
-          () => true, // available
-          () => false, // not available
-        ),
-      ),
-    );
-    return loaded.some((available) => available);
   }
 
   async function check() {

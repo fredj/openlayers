@@ -63,16 +63,12 @@ describe('ol.render.canvas', function () {
             'propertychange',
             onPropertyChange,
           );
-          try {
-            expect(e.key).to.be('normal 400 16px "Abel"');
-            expect(render.textHeights).to.eql({});
+          expect(e.key).to.be('normal 400 16px "Abel"');
+          expect(render.textHeights).to.eql({});
 
-            font.remove();
-            render.checkedFonts.setProperties({}, true);
-            done();
-          } catch (err) {
-            done(err);
-          }
+          font.remove();
+          render.checkedFonts.setProperties({}, true);
+          done();
         },
       );
       render.registerFont('12px Abel');
