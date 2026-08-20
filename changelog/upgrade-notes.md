@@ -31,6 +31,20 @@ new WMTS({
 The `Layer`'s `WGS84BoundingBox` is no longer used, because the WMTS specification allows
 it to be approximate.
 
+#### `z-index` support in the WebGL vector renderer
+
+The `z-index` flat-style property is now honored by the WebGL vector
+renderer (`ol/layer/WebGLVector`), fixing
+[#16331](https://github.com/openlayers/openlayers/issues/16331). Draw order
+now follows each feature's evaluated `z-index` value via GPU depth testing,
+instead of only the order style rules appear in the style array.
+
+This is implemented with depth testing rather than exact painter's-algorithm
+compositing, so it matches the Canvas renderer's output for opaque or
+near-opaque styles but not for semi-transparent overlapping features at
+different z-index — see the `z-index` property documentation in
+`ol/style/flat` for details.
+
 ### 10.10.0
 
 #### Usage of Intl.Segmenter

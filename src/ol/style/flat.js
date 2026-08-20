@@ -136,6 +136,15 @@
  * @property {NumberExpression} [stroke-pattern-spacing] Spacing between each pattern occurrence in pixels; 0 if undefined. (WebGL only)
  * @property {NumberExpression} [stroke-pattern-start-offset] Stroke pattern offset in pixels at the start of the line. (WebGL only)
  * @property {NumberExpression} [z-index] The zIndex of the style.
+ * Note: for the WebGL renderer, z-index is implemented via GPU depth
+ * testing. This is visually identical to the Canvas renderer for opaque or
+ * near-opaque styles, but differs for semi-transparent overlapping
+ * features at different z-index: the Canvas renderer alpha-composites all
+ * overlapping layers back-to-front, while the WebGL renderer shows only
+ * the nearest feature's color in the overlap region. When multiple style
+ * rules are tied at the same z-index, the WebGL renderer breaks the tie by
+ * rule order (the order rules appear in the style array); the Canvas
+ * renderer breaks it by feature render order.
  */
 
 /**
