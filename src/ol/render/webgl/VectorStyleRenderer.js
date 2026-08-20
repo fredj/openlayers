@@ -3,6 +3,12 @@
  */
 import Disposable from '../../Disposable.js';
 import {createCanvasContext2D} from '../../dom.js';
+import {buildExpression, newEvaluationContext} from '../../expr/cpu.js';
+import {
+  BooleanType,
+  NumberType,
+  newParsingContext,
+} from '../../expr/expression.js';
 import {
   create as createTransform,
   makeInverse as makeInverseTransform,
@@ -223,6 +229,11 @@ class VectorStyleRenderer extends Disposable {
      */
     this.uniforms_ = {};
 
+    /**
+     * @private
+     */
+    this.currentResolution_ = 0;
+
     // add hit detection attribute if enabled
     if (this.hitDetectionEnabled_) {
       this.customAttributes_['hitColor'] = {
@@ -232,6 +243,53 @@ class VectorStyleRenderer extends Disposable {
         size: 2,
       };
     }
+
+    // add the z-index custom attribute unconditionally: every feature gets
+    // a numeric z-index (default 0) written into the vertex buffer and
+    // combined with u_depth in the vertex shader, regardless of whether any
+    // rule declares 'z-index' (see
+    // docs/superpowers/specs/2026-08-20-webgl-vector-zindex-design.md)
+    const zIndexParsingContext = newParsingContext(variables);
+    const zIndexEvaluators = this.styleShaders.map((styleShader) => ({
+      filterEvaluator: styleShader.effectiveFilter
+        ? buildExpression(
+            styleShader.effectiveFilter,
+            BooleanType,
+            zIndexParsingContext,
+          )
+        : null,
+      zIndexEvaluator:
+        styleShader.zIndexExpr !== undefined
+          ? buildExpression(
+              styleShader.zIndexExpr,
+              NumberType,
+              zIndexParsingContext,
+            )
+          : null,
+    }));
+    const zIndexEvaluationContext = newEvaluationContext();
+    zIndexEvaluationContext.variables = variables;
+    this.customAttributes_['zIndex'] = {
+      size: 1,
+      callback: (feature) => {
+        zIndexEvaluationContext.properties =
+          feature.getPropertiesInternal() ?? {};
+        zIndexEvaluationContext.resolution = this.currentResolution_ ?? 0;
+        for (const entry of zIndexEvaluators) {
+          if (
+            !entry.filterEvaluator ||
+            entry.filterEvaluator(zIndexEvaluationContext)
+          ) {
+            return entry.zIndexEvaluator
+              ? /** @type {number} */ (
+                  entry.zIndexEvaluator(zIndexEvaluationContext)
+                )
+              : 0;
+          }
+        }
+        return 0;
+      },
+    };
 
     // add attributes & uniforms coming from all shaders
     for (const styleShader of this.styleShaders) {
@@ -263,7 +321,10 @@ class VectorStyleRenderer extends Disposable {
 
       const customAttributesDesc = Object.entries(this.customAttributes_).map(
         ([name, value]) => {
-          const isUsed = name in styleShader.attributes || name === 'hitColor';
+          const isUsed =
+            name in styleShader.attributes ||
+            name === 'hitColor' ||
+            name === 'zIndex';
           return {
             name: isUsed ? `a_${name}` : null, // giving a null name means this is only used for "spacing" in between attributes
             size: value.size || 1,
@@ -429,6 +490,8 @@ class VectorStyleRenderer extends Disposable {
    * @return {Promise<WebGLBuffers>} A promise resolving to WebGL buffers; buffer sets are set to `null` if nothing to render
    */
   async generateBuffers(geometryBatch, transform, resolution) {
+    this.currentResolution_ = resolution;
+
     // also return the inverse of the transform that was applied when generating buffers
     const invertVerticesTransform = makeInverseTransform(
       createTransform(),
@@ -1009,6 +1072,8 @@ export function convertStyleToShaders(style, variables) {
       const styleShaders = ruleStyles.map((style) => ({
         ...parseLiteralStyle(style, variables, currentFilter),
         sourceRule: rule,
+        effectiveFilter: currentFilter,
+        zIndexExpr: style['z-index'],
       }));
       shaders.push(...styleShaders);
     }
@@ -1024,5 +1089,7 @@ export function convertStyleToShaders(style, variables) {
   return /** @type {Array<FlatStyle>} */ (asArray).map((style) => ({
     ...parseLiteralStyle(style, variables, undefined),
     sourceRule: {style},
+    effectiveFilter: undefined,
+    zIndexExpr: style['z-index'],
   }));
 }

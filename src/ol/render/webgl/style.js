@@ -1000,9 +1000,6 @@ function parseTextProperties(style, builder, uniforms, context) {
       NumberType,
     );
   }
-  if ('z-index' in style) {
-    safeExpressionToGlsl(context, style['z-index'], NumberType);
-  }
 }
 
 /**
@@ -1011,6 +1008,8 @@ function parseTextProperties(style, builder, uniforms, context) {
  * @property {import("./VectorStyleRenderer.js").UniformDefinitions} uniforms Uniform definitions
  * @property {import("./VectorStyleRenderer.js").AttributeDefinitions} attributes Attribute definitions
  * @property {import("../../style/flat.js").Rule} [sourceRule] Style and filter that was parsed (if any)
+ * @property {import("../../expr/expression.js").EncodedExpression} [effectiveFilter] The effective filter (including any "else" expansion) used to build this style shader, if any.
+ * @property {import("../../expr/expression.js").EncodedExpression} [zIndexExpr] The raw 'z-index' expression for this style shader, if any.
  */
 
 /**

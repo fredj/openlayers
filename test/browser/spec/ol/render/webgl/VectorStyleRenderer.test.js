@@ -342,6 +342,54 @@ describe('VectorStyleRenderer', () => {
       ]);
     });
   });
+  describe('z-index custom attribute', () => {
+    it('defaults to 0 when no rule declares z-index', () => {
+      vectorStyleRenderer = new VectorStyleRenderer(
+        SAMPLE_STYLE_RULES,
+        {},
+        helper,
+      );
+      const feature = new Feature({
+        id: 1,
+        size: 1000,
+        color: 'red',
+        geometry: new Point([0, 0]),
+      });
+      const value =
+        vectorStyleRenderer.customAttributes_['zIndex'].callback(feature);
+      assert.strictEqual(value, 0);
+    });
+
+    it('evaluates a constant z-index for the matching rule', () => {
+      const rules = [
+        {
+          style: {'fill-color': 'red', 'z-index': 5},
+          filter: ['==', ['get', 'group'], 'a'],
+        },
+        {
+          style: {'fill-color': 'blue', 'z-index': 9},
+          filter: ['==', ['get', 'group'], 'b'],
+        },
+      ];
+      vectorStyleRenderer = new VectorStyleRenderer(rules, {}, helper);
+      const callback = vectorStyleRenderer.customAttributes_['zIndex'].callback;
+      const featureA = new Feature({group: 'a', geometry: new Point([0, 0])});
+      const featureB = new Feature({group: 'b', geometry: new Point([0, 0])});
+      assert.strictEqual(callback(featureA), 5);
+      assert.strictEqual(callback(featureB), 9);
+    });
+
+    it('evaluates a per-feature z-index expression', () => {
+      const rules = [
+        {style: {'fill-color': 'red', 'z-index': ['get', 'rank']}},
+      ];
+      vectorStyleRenderer = new VectorStyleRenderer(rules, {}, helper);
+      const feature = new Feature({rank: 42, geometry: new Point([0, 0])});
+      const value =
+        vectorStyleRenderer.customAttributes_['zIndex'].callback(feature);
+      assert.strictEqual(value, 42);
+    });
+  });
   describe('methods', () => {
     beforeEach(() => {
       vectorStyleRenderer = new VectorStyleRenderer(
