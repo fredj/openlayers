@@ -22,6 +22,7 @@ import {createLoader} from './static.js';
  * linear interpolation is used when resampling.  Set to false to use the nearest neighbor instead.
  * @property {import("../proj.js").ProjectionLike} [projection] Projection. Default is the view projection.
  * @property {string} url Image URL.
+ * @property {boolean} [wrapX=false] Wrap the world horizontally.
  */
 
 /**
@@ -46,6 +47,7 @@ class Static extends ImageSource {
       attributions: options.attributions,
       interpolate: options.interpolate,
       projection: options.projection,
+      wrapX: options.wrapX,
     });
 
     /**

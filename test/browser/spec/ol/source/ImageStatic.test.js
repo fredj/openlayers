@@ -31,6 +31,18 @@ describe('ol/source/ImageStatic', function () {
     });
   });
 
+  describe('#getWrapX()', function () {
+    it('defaults to false', function () {
+      const source = new Static({imageExtent: extent});
+      assert.strictEqual(source.getWrapX(), false);
+    });
+
+    it('reflects the wrapX constructor option', function () {
+      const source = new Static({imageExtent: extent, wrapX: true});
+      assert.strictEqual(source.getWrapX(), true);
+    });
+  });
+
   describe('#getImage', function () {
     it('scales image height to fit imageExtent', () =>
       new Promise((resolve, reject) => {

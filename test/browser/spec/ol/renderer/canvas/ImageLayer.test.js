@@ -392,6 +392,109 @@ describe('ol/renderer/canvas/ImageLayer', function () {
       }));
   });
 
+  describe('world wrapping', function () {
+    const projection = new Projection({
+      code: 'custom-image-wrap',
+      units: 'pixels',
+      extent: [0, 0, 256, 256],
+      global: true,
+    });
+    let renderer, layer;
+    function createLayerFrameState(extent, wrapX) {
+      layer = new ImageLayer({
+        source: new Static({
+          url: 'spec/ol/data/osm-0-0-0.png',
+          imageExtent: projection.getExtent(),
+          projection: projection,
+          wrapX: wrapX,
+        }),
+      });
+      layer.getSource().getImage([0, 0, 100, 100], 1, 1, projection).load();
+      renderer = layer.getRenderer();
+      renderer.useContainer = function () {
+        CanvasImageLayerRenderer.prototype.useContainer.apply(this, arguments);
+        vi.spyOn(this.context, 'drawImage');
+      };
+      return {
+        pixelRatio: 1,
+        time: 1000000000000,
+        viewState: {
+          center: [128, 128],
+          projection: projection,
+          resolution: 1,
+          rotation: 0,
+        },
+        animate: false,
+        coordinateToPixelTransform: [1, 0, 0, 1, 0, 0],
+        extent: extent,
+        index: 0,
+        layerStatesArray: [layer.getLayerState()],
+        layerIndex: 0,
+        pixelToCoordinateTransform: [1, 0, 0, 1, 0, 0],
+        size: [100, 100],
+        viewHints: [],
+      };
+    }
+    it('finds the image for an extent in an adjacent world when wrapX is true', () =>
+      new Promise((resolve, reject) => {
+        const frameState = createLayerFrameState([300, 0, 400, 100], true);
+        layer.getSource().on('imageloadend', function () {
+          try {
+            assert.strictEqual(renderer.prepareFrame(frameState), true);
+            resolve();
+          } catch (e) {
+            reject(e);
+            return;
+          }
+        });
+      }));
+    it('does not find the image for an extent in an adjacent world when wrapX is false', () =>
+      new Promise((resolve, reject) => {
+        const frameState = createLayerFrameState([300, 0, 400, 100], false);
+        layer.getSource().on('imageloadend', function () {
+          try {
+            assert.strictEqual(renderer.prepareFrame(frameState), false);
+            resolve();
+          } catch (e) {
+            reject(e);
+            return;
+          }
+        });
+      }));
+    it('draws the image once per visible world when wrapX is true', () =>
+      new Promise((resolve, reject) => {
+        const frameState = createLayerFrameState([10, 0, 490, 100], true);
+        layer.getSource().on('imageloadend', function () {
+          try {
+            if (renderer.prepareFrame(frameState)) {
+              renderer.renderFrame(frameState, null);
+            }
+            assert.strictEqual(renderer.context.drawImage.mock.calls.length, 2);
+            resolve();
+          } catch (e) {
+            reject(e);
+            return;
+          }
+        });
+      }));
+    it('draws the image exactly once when wrapX is false', () =>
+      new Promise((resolve, reject) => {
+        const frameState = createLayerFrameState([10, 0, 490, 100], false);
+        layer.getSource().on('imageloadend', function () {
+          try {
+            if (renderer.prepareFrame(frameState)) {
+              renderer.renderFrame(frameState, null);
+            }
+            assert.strictEqual(renderer.context.drawImage.mock.calls.length, 1);
+            resolve();
+          } catch (e) {
+            reject(e);
+            return;
+          }
+        });
+      }));
+  });
+
   describe('cache invalidation on visibility change', function () {
     /** @type {Map} */
     let map;

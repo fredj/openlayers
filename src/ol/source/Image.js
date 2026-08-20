@@ -94,6 +94,7 @@ export class ImageSourceEvent extends Event {
  * @property {import("../proj.js").ProjectionLike} [projection] Projection.
  * @property {Array<number>} [resolutions] Resolutions.
  * @property {import("./Source.js").State} [state] State.
+ * @property {boolean} [wrapX=false] Wrap the world horizontally.
  */
 
 /**
@@ -113,6 +114,7 @@ class ImageSource extends Source {
       state: options.state,
       interpolate:
         options.interpolate !== undefined ? options.interpolate : true,
+      wrapX: options.wrapX,
     });
 
     /***

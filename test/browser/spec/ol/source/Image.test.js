@@ -20,4 +20,16 @@ describe('ol/source/Image', function () {
       assert.strictEqual(source.static_, true);
     });
   });
+
+  describe('#getWrapX()', function () {
+    it('defaults to false', function () {
+      const source = new ImageSource({});
+      assert.strictEqual(source.getWrapX(), false);
+    });
+
+    it('reflects the wrapX constructor option', function () {
+      const source = new ImageSource({wrapX: true});
+      assert.strictEqual(source.getWrapX(), true);
+    });
+  });
 });

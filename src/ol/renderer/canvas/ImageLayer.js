@@ -11,6 +11,7 @@ import {
   getWidth,
   intersects as intersectsExtent,
   isEmpty,
+  wrapX,
 } from '../../extent.js';
 import {fromUserExtent} from '../../proj.js';
 import {
@@ -97,8 +98,11 @@ class CanvasImageLayerRenderer extends CanvasLayerRenderer {
         this.renderedSourceRevision_ = imageSource.getRevision();
 
         const projection = viewState.projection;
+        const requestExtent = imageSource.getWrapX()
+          ? wrapX(renderedExtent.slice(), projection)
+          : renderedExtent;
         const image = imageSource.getImage(
-          renderedExtent,
+          requestExtent,
           viewResolution,
           pixelRatio,
           projection,
@@ -226,38 +230,65 @@ class CanvasImageLayerRenderer extends CanvasLayerRenderer {
       return this.getContainerElement();
     }
 
-    const transform = composeTransform(
-      this.tempTransform,
-      width / 2,
-      height / 2,
-      scaleX,
-      scaleY,
-      0,
-      (imagePixelRatio * (imageExtent[0] - viewCenter[0])) / imageResolutionX,
-      (imagePixelRatio * (viewCenter[1] - imageExtent[3])) / imageResolutionY,
-    );
-
     this.renderedResolution = (imageResolutionY * pixelRatio) / imagePixelRatio;
 
-    const dw = img.width * transform[0];
-    const dh = img.height * transform[3];
+    const source = this.getLayer().getSource();
+    const multiWorld = source?.getWrapX() && viewState.projection.canWrapX();
+    const worldWidth = multiWorld
+      ? getWidth(viewState.projection.getExtent())
+      : 0;
+    const frameExtent = /** @type {import("../../extent.js").Extent} */ (
+      frameState.extent
+    );
+    const minWorld = multiWorld
+      ? Math.floor((frameExtent[0] - imageExtent[2]) / worldWidth) - 1
+      : 0;
+    const maxWorld = multiWorld
+      ? Math.ceil((frameExtent[2] - imageExtent[0]) / worldWidth) + 1
+      : 0;
 
-    if (!this.getLayer().getSource()?.getInterpolate()) {
+    if (!source?.getInterpolate()) {
       context.imageSmoothingEnabled = false;
     }
 
     this.preRender(context, frameState);
-    if (render && dw >= 0.5 && dh >= 0.5) {
-      const dx = transform[4];
-      const dy = transform[5];
-      const opacity = layerState.opacity;
-      if (opacity !== 1) {
-        context.save();
-        context.globalAlpha = opacity;
-      }
-      context.drawImage(img, 0, 0, img.width, img.height, dx, dy, dw, dh);
-      if (opacity !== 1) {
-        context.restore();
+    if (render && img.width * scaleX >= 0.5 && img.height * scaleY >= 0.5) {
+      for (let world = minWorld; world <= maxWorld; world++) {
+        const offsetX = world * worldWidth;
+        const worldImageExtent = [
+          imageExtent[0] + offsetX,
+          imageExtent[1],
+          imageExtent[2] + offsetX,
+          imageExtent[3],
+        ];
+        if (multiWorld && !intersectsExtent(worldImageExtent, frameExtent)) {
+          continue;
+        }
+        const transform = composeTransform(
+          this.tempTransform,
+          width / 2,
+          height / 2,
+          scaleX,
+          scaleY,
+          0,
+          (imagePixelRatio * (worldImageExtent[0] - viewCenter[0])) /
+            imageResolutionX,
+          (imagePixelRatio * (viewCenter[1] - worldImageExtent[3])) /
+            imageResolutionY,
+        );
+        const dw = img.width * transform[0];
+        const dh = img.height * transform[3];
+        const dx = transform[4];
+        const dy = transform[5];
+        const opacity = layerState.opacity;
+        if (opacity !== 1) {
+          context.save();
+          context.globalAlpha = opacity;
+        }
+        context.drawImage(img, 0, 0, img.width, img.height, dx, dy, dw, dh);
+        if (opacity !== 1) {
+          context.restore();
+        }
       }
     }
     this.postRender(this.getCanvasContext(), frameState);
