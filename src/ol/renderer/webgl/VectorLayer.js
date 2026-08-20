@@ -403,7 +403,7 @@ class WebGLVectorLayerRenderer extends WebGLLayerRenderer {
     );
 
     // draw the normal canvas
-    this.helper.prepareDraw(frameState);
+    this.helper.prepareDraw(frameState, undefined, true);
     this.renderWorlds(frameState, false, startWorld, endWorld, worldWidth);
 
     if (this.hasText_) {
@@ -548,7 +548,12 @@ class WebGLVectorLayerRenderer extends WebGLLayerRenderer {
         Math.floor(frameState.size[0] / 2),
         Math.floor(frameState.size[1] / 2),
       ]);
-      this.helper.prepareDrawToRenderTarget(frameState, hitRenderTarget, true);
+      this.helper.prepareDrawToRenderTarget(
+        frameState,
+        hitRenderTarget,
+        true,
+        true,
+      );
     }
 
     do {

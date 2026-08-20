@@ -517,6 +517,7 @@ describe('ol/renderer/webgl/VectorLayer', () => {
       vi.spyOn(renderer.helper, 'setUniformFloatVec4');
       vi.spyOn(renderer.helper, 'setUniformMatrixValue');
       vi.spyOn(renderer.helper, 'prepareDraw');
+      vi.spyOn(renderer.helper, 'prepareDrawToRenderTarget');
       vi.spyOn(renderer.helper, 'finalizeDraw');
       vi.spyOn(renderer.helper, 'deleteBuffer');
       vi.spyOn(renderer.styleRenderer_, 'render').mockClear();
@@ -624,6 +625,15 @@ describe('ol/renderer/webgl/VectorLayer', () => {
     });
     it('calls helper.prepareDraw once', () => {
       assert.strictEqual(renderer.helper.prepareDraw.mock.calls.length, 1);
+    });
+    it('enables depth testing when preparing to draw', () => {
+      assert.strictEqual(renderer.helper.prepareDraw.mock.calls[0][2], true);
+    });
+    it('enables depth testing when preparing to draw to the hit-detection render target', () => {
+      assert.strictEqual(
+        renderer.helper.prepareDrawToRenderTarget.mock.calls[0][3],
+        true,
+      );
     });
     it('calls helper.finalizeDraw once', () => {
       assert.strictEqual(renderer.helper.finalizeDraw.mock.calls.length, 1);
