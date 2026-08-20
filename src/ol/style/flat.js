@@ -144,7 +144,13 @@
  * the nearest feature's color in the overlap region. When multiple style
  * rules are tied at the same z-index, the WebGL renderer breaks the tie by
  * rule order (the order rules appear in the style array); the Canvas
- * renderer breaks it by feature render order.
+ * renderer breaks it by feature render order. Because the depth buffer has
+ * a limited precision, large z-index magnitudes (very roughly, beyond the
+ * low hundreds) may quantize to the same depth and fall back to draw order;
+ * prefer small, densely packed z-index values. Note also that z-index is
+ * not currently supported for `ol/layer/WebGLVectorTile` layers, only for
+ * `ol/layer/WebGLVector` layers, because the vector tile renderer already
+ * uses depth for its own tile ordering.
  */
 
 /**

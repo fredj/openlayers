@@ -43,7 +43,9 @@ This is implemented with depth testing rather than exact painter's-algorithm
 compositing, so it matches the Canvas renderer's output for opaque or
 near-opaque styles but not for semi-transparent overlapping features at
 different z-index — see the `z-index` property documentation in
-`ol/style/flat` for details.
+`ol/style/flat` for details. `z-index` is not supported for
+`ol/layer/WebGLVectorTile` layers, whose renderer already uses depth for
+its own tile ordering.
 
 ### 10.10.0
 

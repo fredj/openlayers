@@ -1,13 +1,15 @@
 ---
 layout: example.html
 title: WebGL Vector Layer Draw Order
-shortdesc: Overlapping circles stack in the order their style rules are listed
+shortdesc: Overlapping circles stack according to their `z-index`
 docs: >
-  The WebGL vector renderer does not yet support the `z-index` style
-  property (see [issue #16331](https://github.com/openlayers/openlayers/issues/16331)):
-  draw order currently follows the order of the style rules array instead.
-  Here, circle "a" is styled by the first rule (bottom), "b" by the second,
-  and "c" by the third (top).
+  The WebGL vector renderer honors the `z-index` style property (see
+  [issue #16331](https://github.com/openlayers/openlayers/issues/16331)),
+  so draw order is controlled by `z-index` rather than by the order of the
+  style rules array. Here, circle "a" is styled by the first rule but has
+  the highest `z-index` (3) and is drawn on top, "c" has `z-index` 2, and
+  "b", styled by the second rule, has the lowest `z-index` (1) and is drawn
+  at the bottom.
 experimental: true
 tags: "webgl, vector, z-index, style"
 ---

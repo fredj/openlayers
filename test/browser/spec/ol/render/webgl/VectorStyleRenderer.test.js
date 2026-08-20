@@ -403,6 +403,94 @@ describe('VectorStyleRenderer', () => {
         vectorStyleRenderer.customAttributes_['zIndex'].callback(feature);
       assert.strictEqual(value, 42);
     });
+
+    it('does not throw for filters which cannot be evaluated on the CPU and no z-index', () => {
+      const rules = [
+        {style: {'fill-color': 'red'}, filter: ['<', ['zoom'], 10]},
+        {
+          style: {'stroke-color': 'red', 'stroke-width': 2},
+          filter: ['>', ['line-metric'], 0.5],
+        },
+      ];
+      vectorStyleRenderer = new VectorStyleRenderer(rules, {}, helper);
+      const feature = new Feature({geometry: new Point([0, 0])});
+      assert.strictEqual(
+        vectorStyleRenderer.customAttributes_['zIndex'].callback(feature),
+        0,
+      );
+    });
+
+    it('ignores rules whose filter cannot be evaluated on the CPU', () => {
+      const rules = [
+        {style: {'fill-color': 'red', 'z-index': 4}},
+        {
+          style: {'fill-color': 'blue', 'z-index': 8},
+          filter: ['<', ['zoom'], 10],
+        },
+      ];
+      vectorStyleRenderer = new VectorStyleRenderer(rules, {}, helper);
+      const feature = new Feature({geometry: new Point([0, 0])});
+      assert.strictEqual(
+        vectorStyleRenderer.customAttributes_['zIndex'].callback(feature),
+        4,
+      );
+    });
+
+    it('lets the last matching rule win (base style plus highlight)', () => {
+      const rules = [
+        {style: {'fill-color': 'grey'}},
+        {
+          filter: ['==', ['get', 'sel'], true],
+          style: {'fill-color': 'red', 'z-index': 10},
+        },
+      ];
+      vectorStyleRenderer = new VectorStyleRenderer(rules, {}, helper);
+      const callback = vectorStyleRenderer.customAttributes_['zIndex'].callback;
+      const selected = new Feature({sel: true, geometry: new Point([0, 0])});
+      const plain = new Feature({sel: false, geometry: new Point([0, 0])});
+      assert.strictEqual(callback(selected), 10);
+      assert.strictEqual(callback(plain), 0);
+    });
+
+    it('ignores matching rules which do not declare a z-index (highlight listed first)', () => {
+      const rules = [
+        {
+          filter: ['==', ['get', 'sel'], true],
+          style: {'fill-color': 'red', 'z-index': 10},
+        },
+        {style: {'fill-color': 'grey'}},
+      ];
+      vectorStyleRenderer = new VectorStyleRenderer(rules, {}, helper);
+      const callback = vectorStyleRenderer.customAttributes_['zIndex'].callback;
+      const selected = new Feature({sel: true, geometry: new Point([0, 0])});
+      const plain = new Feature({sel: false, geometry: new Point([0, 0])});
+      assert.strictEqual(callback(selected), 10);
+      assert.strictEqual(callback(plain), 0);
+    });
+
+    it('evaluates geometry-type filters', () => {
+      const rules = [
+        {
+          filter: ['==', ['geometry-type'], 'Point'],
+          style: {'circle-radius': 4, 'circle-fill-color': 'red', 'z-index': 7},
+        },
+        {
+          filter: ['==', ['geometry-type'], 'LineString'],
+          style: {'stroke-color': 'blue', 'stroke-width': 2, 'z-index': 3},
+        },
+      ];
+      vectorStyleRenderer = new VectorStyleRenderer(rules, {}, helper);
+      const callback = vectorStyleRenderer.customAttributes_['zIndex'].callback;
+      const point = new Feature({geometry: new Point([0, 0])});
+      const line = new Feature({
+        geometry: new LineString([
+          [0, 0],
+          [1, 1],
+        ]),
+      });
+      assert.strictEqual(callback(point), 7);
+      assert.strictEqual(callback(line), 3);
+    });
   });
   describe('methods', () => {
     beforeEach(() => {

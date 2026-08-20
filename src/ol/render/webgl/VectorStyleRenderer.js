@@ -6,8 +6,9 @@ import {createCanvasContext2D} from '../../dom.js';
 import {buildExpression, newEvaluationContext} from '../../expr/cpu.js';
 import {
   BooleanType,
-  NumberType,
+  computeGeometryType,
   newParsingContext,
+  NumberType,
 } from '../../expr/expression.js';
 import {
   create as createTransform,
@@ -246,50 +247,80 @@ class VectorStyleRenderer extends Disposable {
 
     // add the z-index custom attribute unconditionally: every feature gets
     // a numeric z-index (default 0) written into the vertex buffer and
-    // combined with u_depth in the vertex shader, regardless of whether any
-    // rule declares 'z-index' (see
-    // docs/superpowers/specs/2026-08-20-webgl-vector-zindex-design.md)
-    const zIndexParsingContext = newParsingContext(variables);
-    const zIndexEvaluators = this.styleShaders.map((styleShader) => ({
-      filterEvaluator: styleShader.effectiveFilter
-        ? buildExpression(
-            styleShader.effectiveFilter,
-            BooleanType,
-            zIndexParsingContext,
-          )
-        : null,
-      zIndexEvaluator:
-        styleShader.zIndexExpr !== undefined
-          ? buildExpression(
+    // combined with u_depth in the vertex shader (see
+    // docs/superpowers/specs/2026-08-20-webgl-vector-zindex-design.md);
+    // the CPU evaluators are only built when at least one rule declares
+    // 'z-index', so that styles which do not use it pay no cost at all
+    if (this.styleShaders.some((s) => s.zIndexExpr !== undefined)) {
+      const zIndexParsingContext = newParsingContext(variables);
+      // not every expression which is legal in a GLSL filter can be compiled
+      // for CPU evaluation (e.g. 'zoom', 'line-metric', 'palette'); a rule
+      // whose filter cannot be evaluated here never contributes a z-index
+      // instead of breaking the whole layer
+      const zIndexEvaluators = this.styleShaders.map((styleShader) => {
+        let filterEvaluator = null;
+        if (styleShader.effectiveFilter) {
+          try {
+            filterEvaluator = buildExpression(
+              styleShader.effectiveFilter,
+              BooleanType,
+              zIndexParsingContext,
+            );
+          } catch {
+            filterEvaluator = () => false;
+          }
+        }
+        let zIndexEvaluator = null;
+        if (styleShader.zIndexExpr !== undefined) {
+          try {
+            zIndexEvaluator = buildExpression(
               styleShader.zIndexExpr,
               NumberType,
               zIndexParsingContext,
-            )
-          : null,
-    }));
-    const zIndexEvaluationContext = newEvaluationContext();
-    zIndexEvaluationContext.variables = variables;
-    this.customAttributes_['zIndex'] = {
-      size: 1,
-      callback: (feature) => {
-        zIndexEvaluationContext.properties =
-          feature.getPropertiesInternal() ?? {};
-        zIndexEvaluationContext.resolution = this.currentResolution_ ?? 0;
-        for (const entry of zIndexEvaluators) {
-          if (
-            !entry.filterEvaluator ||
-            entry.filterEvaluator(zIndexEvaluationContext)
-          ) {
-            return entry.zIndexEvaluator
-              ? /** @type {number} */ (
-                  entry.zIndexEvaluator(zIndexEvaluationContext)
-                )
-              : 0;
+            );
+          } catch {
+            zIndexEvaluator = null;
           }
         }
-        return 0;
-      },
-    };
+        return {filterEvaluator, zIndexEvaluator};
+      });
+      const zIndexEvaluationContext = newEvaluationContext();
+      zIndexEvaluationContext.variables = variables;
+      this.customAttributes_['zIndex'] = {
+        size: 1,
+        callback: (feature) => {
+          zIndexEvaluationContext.properties =
+            feature.getPropertiesInternal() ?? {};
+          zIndexEvaluationContext.resolution = this.currentResolution_ ?? 0;
+          zIndexEvaluationContext.featureId = feature.getId() ?? null;
+          const geometry = feature.getGeometry();
+          zIndexEvaluationContext.geometryType = geometry
+            ? computeGeometryType(geometry)
+            : '';
+          // the last matching rule which declares a z-index wins, consistently
+          // with rule precedence in the style array; matching rules without a
+          // z-index leave the value chosen by an earlier rule untouched
+          let zIndex = 0;
+          for (const entry of zIndexEvaluators) {
+            if (
+              entry.zIndexEvaluator &&
+              (!entry.filterEvaluator ||
+                entry.filterEvaluator(zIndexEvaluationContext))
+            ) {
+              zIndex = /** @type {number} */ (
+                entry.zIndexEvaluator(zIndexEvaluationContext)
+              );
+            }
+          }
+          return zIndex;
+        },
+      };
+    } else {
+      this.customAttributes_['zIndex'] = {
+        size: 1,
+        callback: () => 0,
+      };
+    }
 
     // add attributes & uniforms coming from all shaders
     for (const styleShader of this.styleShaders) {

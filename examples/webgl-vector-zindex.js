@@ -6,11 +6,10 @@ import WebGLVectorLayer from '../src/ol/layer/WebGLVector.js';
 import VectorSource from '../src/ol/source/Vector.js';
 
 // Three overlapping circles, one per `group`. The WebGL vector renderer
-// does not yet support the `z-index` style property (see
-// https://github.com/openlayers/openlayers/issues/16331): draw order
-// currently follows the order of the style rules array instead. The
-// style below has one rule per group, listed in the order in which the
-// circles should stack: "a" is drawn first (bottom), "c" last (top).
+// honors the `z-index` style property, so stacking is controlled by
+// `z-index` and not by the order of the style rules array: "a" is listed
+// first but has the highest z-index and is drawn on top, "b" is listed
+// second but has the lowest z-index and is drawn at the bottom.
 const source = new VectorSource({
   features: [
     new Feature({geometry: new Point([-40000, 0]), group: 'a'}),
@@ -27,6 +26,7 @@ const vectorLayer = new WebGLVectorLayer({
       style: {
         'circle-radius': 60,
         'circle-fill-color': '#3399CC',
+        'z-index': 3,
         'text-value': 'a',
         'text-font': 'bold 20px sans-serif',
         'text-fill-color': '#fff',
@@ -37,6 +37,7 @@ const vectorLayer = new WebGLVectorLayer({
       style: {
         'circle-radius': 60,
         'circle-fill-color': '#CC3399',
+        'z-index': 1,
         'text-value': 'b',
         'text-font': 'bold 20px sans-serif',
         'text-fill-color': '#fff',
@@ -47,6 +48,7 @@ const vectorLayer = new WebGLVectorLayer({
       style: {
         'circle-radius': 60,
         'circle-fill-color': '#99CC33',
+        'z-index': 2,
         'text-value': 'c',
         'text-font': 'bold 20px sans-serif',
         'text-fill-color': '#fff',
