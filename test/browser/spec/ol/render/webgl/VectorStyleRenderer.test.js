@@ -154,6 +154,7 @@ describe('VectorStyleRenderer', () => {
     });
     it('creates a VectorStyleRenderer with two render passes and all attributes and uniforms combined', () => {
       assertCustomAttributes(vectorStyleRenderer.customAttributes_, {
+        zIndex: {size: 1},
         prop_color: {size: 2},
         prop_size: {size: 1},
         prop_id: {size: 1},
@@ -172,6 +173,7 @@ describe('VectorStyleRenderer', () => {
       assert.instanceOf(firstPass.fillRenderPass.program, WebGLProgram);
       assert.deepEqual(firstPass.fillRenderPass.attributesDesc, [
         {name: 'a_position', size: 2, type: FLOAT},
+        {name: 'a_zIndex', size: 1, type: FLOAT},
         {name: 'a_prop_size', size: 1, type: FLOAT},
         {name: 'a_prop_color', size: 2, type: FLOAT},
         {name: null, size: 1, type: FLOAT}, // this is padding for the `id` attribute
@@ -189,6 +191,7 @@ describe('VectorStyleRenderer', () => {
         {name: 'a_distanceLow', size: 1, type: FLOAT},
         {name: 'a_distanceHigh', size: 1, type: FLOAT},
         {name: 'a_angleTangentSum', size: 1, type: FLOAT},
+        {name: 'a_zIndex', size: 1, type: FLOAT},
         {name: 'a_prop_size', size: 1, type: FLOAT},
         {name: 'a_prop_color', size: 2, type: FLOAT},
         {name: null, size: 1, type: FLOAT},
@@ -199,6 +202,7 @@ describe('VectorStyleRenderer', () => {
       ]);
       assert.deepEqual(firstPass.symbolRenderPass.instancedAttributesDesc, [
         {name: 'a_position', size: 2, type: FLOAT},
+        {name: 'a_zIndex', size: 1, type: FLOAT},
         {name: 'a_prop_size', size: 1, type: FLOAT},
         {name: 'a_prop_color', size: 2, type: FLOAT},
         {name: null, size: 1, type: FLOAT},
@@ -208,6 +212,7 @@ describe('VectorStyleRenderer', () => {
       assert.instanceOf(secondPass.fillRenderPass.program, WebGLProgram);
       assert.deepEqual(secondPass.fillRenderPass.attributesDesc, [
         {name: 'a_position', size: 2, type: FLOAT},
+        {name: 'a_zIndex', size: 1, type: FLOAT},
         {name: null, size: 1, type: FLOAT},
         {name: null, size: 2, type: FLOAT},
         {name: 'a_prop_id', size: 1, type: FLOAT},
@@ -228,6 +233,7 @@ describe('VectorStyleRenderer', () => {
     it('creates a VectorStyleRenderer with two render passes and all attributes and uniforms combined', () => {
       assertCustomAttributes(vectorStyleRenderer.customAttributes_, {
         hitColor: {size: 2},
+        zIndex: {size: 1},
         prop_color: {size: 2},
         prop_size: {size: 1},
         prop_id: {size: 1},
@@ -243,6 +249,7 @@ describe('VectorStyleRenderer', () => {
       assert.deepEqual(firstPass.fillRenderPass.attributesDesc, [
         {name: 'a_position', size: 2, type: FLOAT},
         {name: 'a_hitColor', size: 2, type: FLOAT},
+        {name: 'a_zIndex', size: 1, type: FLOAT},
         {name: 'a_prop_size', size: 1, type: FLOAT},
         {name: 'a_prop_color', size: 2, type: FLOAT},
         {name: null, size: 1, type: FLOAT}, // this is padding for the `id` attribute
@@ -261,6 +268,7 @@ describe('VectorStyleRenderer', () => {
         {name: 'a_distanceHigh', size: 1, type: FLOAT},
         {name: 'a_angleTangentSum', size: 1, type: FLOAT},
         {name: 'a_hitColor', size: 2, type: FLOAT},
+        {name: 'a_zIndex', size: 1, type: FLOAT},
         {name: 'a_prop_size', size: 1, type: FLOAT},
         {name: 'a_prop_color', size: 2, type: FLOAT},
         {name: null, size: 1, type: FLOAT},
@@ -272,6 +280,7 @@ describe('VectorStyleRenderer', () => {
       assert.deepEqual(firstPass.symbolRenderPass.instancedAttributesDesc, [
         {name: 'a_position', size: 2, type: FLOAT},
         {name: 'a_hitColor', size: 2, type: FLOAT},
+        {name: 'a_zIndex', size: 1, type: FLOAT},
         {name: 'a_prop_size', size: 1, type: FLOAT},
         {name: 'a_prop_color', size: 2, type: FLOAT},
         {name: null, size: 1, type: FLOAT},
@@ -282,6 +291,7 @@ describe('VectorStyleRenderer', () => {
       assert.deepEqual(secondPass.fillRenderPass.attributesDesc, [
         {name: 'a_position', size: 2, type: FLOAT},
         {name: 'a_hitColor', size: 2, type: FLOAT},
+        {name: 'a_zIndex', size: 1, type: FLOAT},
         {name: null, size: 1, type: FLOAT},
         {name: null, size: 2, type: FLOAT},
         {name: 'a_prop_id', size: 1, type: FLOAT},
@@ -300,6 +310,7 @@ describe('VectorStyleRenderer', () => {
     });
     it('creates a VectorStyleRenderer with a single render pass', () => {
       assertCustomAttributes(vectorStyleRenderer.customAttributes_, {
+        zIndex: {size: 1},
         prop_attr1: {},
         prop_attr2: {size: 3},
       });
@@ -312,6 +323,7 @@ describe('VectorStyleRenderer', () => {
       assert.instanceOf(firstPass.fillRenderPass.program, WebGLProgram);
       assert.deepEqual(firstPass.fillRenderPass.attributesDesc, [
         {name: 'a_position', size: 2, type: FLOAT},
+        {name: 'a_zIndex', size: 1, type: FLOAT},
         {name: 'a_prop_attr1', size: 1, type: FLOAT},
         {name: 'a_prop_attr2', size: 3, type: FLOAT},
       ]);
@@ -328,6 +340,7 @@ describe('VectorStyleRenderer', () => {
         {name: 'a_distanceLow', size: 1, type: FLOAT},
         {name: 'a_distanceHigh', size: 1, type: FLOAT},
         {name: 'a_angleTangentSum', size: 1, type: FLOAT},
+        {name: 'a_zIndex', size: 1, type: FLOAT},
         {name: 'a_prop_attr1', size: 1, type: FLOAT},
         {name: 'a_prop_attr2', size: 3, type: FLOAT},
       ]);
@@ -337,6 +350,7 @@ describe('VectorStyleRenderer', () => {
       ]);
       assert.deepEqual(firstPass.symbolRenderPass.instancedAttributesDesc, [
         {name: 'a_position', size: 2, type: FLOAT},
+        {name: 'a_zIndex', size: 1, type: FLOAT},
         {name: 'a_prop_attr1', size: 1, type: FLOAT},
         {name: 'a_prop_attr2', size: 3, type: FLOAT},
       ]);
@@ -437,8 +451,8 @@ describe('VectorStyleRenderer', () => {
         assert.strictEqual(buffers.polygonBuffers[1].getType(), ARRAY_BUFFER);
         assert.strictEqual(buffers.polygonBuffers[1].getUsage(), DYNAMIC_DRAW);
         assertArrayLikeEqual(
-          buffers.polygonBuffers[1].getArray().slice(0, 6),
-          [-45, -47.5, 3000, 128, 255, 3],
+          buffers.polygonBuffers[1].getArray().slice(0, 7),
+          [-45, -47.5, 0, 3000, 128, 255, 3],
         );
 
         assert.instanceOf(buffers.lineStringBuffers[0], WebGLArrayBuffer);
@@ -473,10 +487,10 @@ describe('VectorStyleRenderer', () => {
           DYNAMIC_DRAW,
         );
         assertArrayLikeEqual(
-          buffers.lineStringBuffers[2].getArray().slice(0, 15),
+          buffers.lineStringBuffers[2].getArray().slice(0, 16),
           [
             -45, -47.5, 0, -40, -47.5, 0, 1.5707963705062866, 4.71238899230957,
-            0, 0, 0, 3000, 128, 255, 3,
+            0, 0, 0, 0, 3000, 128, 255, 3,
           ],
         );
 
@@ -497,8 +511,8 @@ describe('VectorStyleRenderer', () => {
         assert.strictEqual(buffers.pointBuffers[2].getType(), ARRAY_BUFFER);
         assert.strictEqual(buffers.pointBuffers[2].getUsage(), DYNAMIC_DRAW);
         assertArrayLikeEqual(
-          buffers.pointBuffers[2].getArray().slice(0, 6),
-          [-45, -45, 1000, 65280, 255, 1],
+          buffers.pointBuffers[2].getArray().slice(0, 7),
+          [-45, -45, 0, 1000, 65280, 255, 1],
         );
       });
     });
@@ -779,7 +793,7 @@ describe('VectorStyleRenderer', () => {
       assert.deepEqual(helper.drawElementsInstanced.mock.calls[0], [
         0,
         buffers.pointBuffers[0].getSize(),
-        buffers.pointBuffers[2].getSize() / 6,
+        buffers.pointBuffers[2].getSize() / 7,
       ]);
 
       assert.strictEqual(helper.drawElements.mock.calls.length, 0);
@@ -853,6 +867,7 @@ describe('VectorStyleRenderer', () => {
           },
         ]);
         assert.deepEqual(message.customAttributesSizes, {
+          zIndex: 1,
           prop_size: 1,
           prop_id: 1,
           prop_label: 3,
@@ -1158,6 +1173,8 @@ describe('VectorStyleRenderer', () => {
               'stroke-width': 2,
             },
           },
+          effectiveFilter: undefined,
+          zIndexExpr: undefined,
         },
       ]);
     });
@@ -1184,6 +1201,8 @@ describe('VectorStyleRenderer', () => {
               'fill-color': 'red',
             },
           },
+          effectiveFilter: undefined,
+          zIndexExpr: undefined,
         },
         {
           builder: new ShaderBuilder()
@@ -1197,6 +1216,8 @@ describe('VectorStyleRenderer', () => {
               'stroke-width': 2,
             },
           },
+          effectiveFilter: undefined,
+          zIndexExpr: undefined,
         },
       ]);
     });
