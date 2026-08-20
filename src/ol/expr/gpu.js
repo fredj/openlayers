@@ -116,6 +116,17 @@ export function uniformNameForVariable(variableName) {
 }
 
 /**
+ * Replaces characters that are not allowed in GLSL identifiers with an underscore, so that
+ * arbitrary feature property names (e.g. containing colons, spaces or dots) can be used to
+ * build valid attribute and varying names.
+ * @param {string} propName Property name.
+ * @return {string} Sanitized name, safe to use as part of a GLSL identifier.
+ */
+export function sanitizePropertyName(propName) {
+  return propName.replace(/[^a-zA-Z0-9_]/g, '_');
+}
+
+/**
  * @typedef {import('./expression.js').ParsingContext} ParsingContext
  */
 /**
@@ -224,7 +235,7 @@ const compilers = {
   [Ops.Get]: (context, expression) => {
     const firstArg = /** @type {LiteralExpression} */ (expression.args[0]);
     const propName = /** @type {string} */ (firstArg.value);
-    let result = 'a_prop_' + propName;
+    let result = 'a_prop_' + sanitizePropertyName(propName);
     if (isType(expression.type, BooleanType)) {
       result = `(${result} > 0.0)`;
     }
@@ -251,7 +262,7 @@ const compilers = {
   [Ops.Has]: (context, expression) => {
     const firstArg = /** @type {LiteralExpression} */ (expression.args[0]);
     const propName = /** @type {string} */ (firstArg.value);
-    return `(a_prop_${propName} != ${numberToGlsl(UNDEFINED_PROP_VALUE)})`;
+    return `(a_prop_${sanitizePropertyName(propName)} != ${numberToGlsl(UNDEFINED_PROP_VALUE)})`;
   },
   [Ops.Resolution]: () => 'u_resolution',
   [Ops.Zoom]: () => 'u_zoom',

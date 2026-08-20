@@ -15,6 +15,7 @@ import {
 import {
   buildExpression,
   getStringNumberEquivalent,
+  sanitizePropertyName,
   uniformNameForVariable,
 } from '../../expr/gpu.js';
 
@@ -140,7 +141,7 @@ export function applyContextToBuilder(builder, context) {
   for (const entry of context.properties.entries()) {
     const [propName, propType] = entry;
     const glslType = getGlslTypeFromType(propType);
-    const attributeName = `a_prop_${propName}`;
+    const attributeName = `a_prop_${sanitizePropertyName(propName)}`;
     if (propType === ColorType) {
       builder.addAttribute(
         attributeName,
@@ -229,7 +230,7 @@ export function generateAttributesFromContext(context) {
       return value;
     };
 
-    attributes[`prop_${propName}`] = {
+    attributes[`prop_${sanitizePropertyName(propName)}`] = {
       size: getGlslSizeFromType(propType),
       callback,
     };

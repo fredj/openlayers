@@ -196,5 +196,20 @@ describe('ol/render/webgl/compileUtil', () => {
       assert.deepEqual(attributes.prop_booleanProp.size, 1);
       assert.deepEqual(attributes.prop_booleanProp.callback(feature), 1);
     });
+
+    it('sanitizes property names to produce valid GLSL identifiers', () => {
+      const context = {
+        properties: new Map([['ref:colour', StringType]]),
+      };
+      const attributes = generateAttributesFromContext(context);
+
+      const feature = new Feature({'ref:colour': 'hello world'});
+
+      assert.property(attributes, 'prop_ref_colour');
+      assert.strictEqual(
+        attributes.prop_ref_colour.callback(feature),
+        'hello world',
+      );
+    });
   });
 });

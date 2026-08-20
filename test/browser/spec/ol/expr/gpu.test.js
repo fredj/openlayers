@@ -175,6 +175,17 @@ describe('ol/expr/gpu', () => {
           ]);
         },
       },
+      {
+        name: 'property name with characters invalid in a GLSL identifier',
+        type: BooleanType,
+        expression: [
+          'all',
+          ['has', 'ref:colour'],
+          ['>', ['get', 'ref:colour'], 0],
+        ],
+        expected:
+          '((a_prop_ref_colour != -9999999.0) && (a_prop_ref_colour > 0.0))',
+      },
     ];
 
     for (const c of cases) {
