@@ -27,6 +27,9 @@ const vectorLayer = new WebGLVectorLayer({
       style: {
         'circle-radius': 60,
         'circle-fill-color': '#3399CC',
+        'text-value': 'a',
+        'text-font': 'bold 20px sans-serif',
+        'text-fill-color': '#fff',
       },
     },
     {
@@ -34,6 +37,9 @@ const vectorLayer = new WebGLVectorLayer({
       style: {
         'circle-radius': 60,
         'circle-fill-color': '#CC3399',
+        'text-value': 'b',
+        'text-font': 'bold 20px sans-serif',
+        'text-fill-color': '#fff',
       },
     },
     {
@@ -41,6 +47,9 @@ const vectorLayer = new WebGLVectorLayer({
       style: {
         'circle-radius': 60,
         'circle-fill-color': '#99CC33',
+        'text-value': 'c',
+        'text-font': 'bold 20px sans-serif',
+        'text-fill-color': '#fff',
       },
     },
   ],
