@@ -28,6 +28,7 @@ describe('ol.webgl.ShaderBuilder', () => {
 attribute vec2 a_position;
 attribute vec2 a_localPosition;
 attribute vec2 a_hitColor;
+attribute float a_zIndex;
 
 varying vec2 v_texCoord;
 varying vec2 v_quadCoord;
@@ -60,7 +61,7 @@ void main(void) {
   float s = sin(-angle);
   offsetPx = vec2(c * offsetPx.x - s * offsetPx.y, s * offsetPx.x + c * offsetPx.y);
   vec4 center = u_projectionMatrix * vec4(a_position, 0.0, 1.0);
-  gl_Position = center + vec4(pxToScreen(offsetPx), u_depth, 0.);
+  gl_Position = center + vec4(pxToScreen(offsetPx), u_depth + a_zIndex / (1.0 + abs(a_zIndex)), 0.);
   vec4 texCoord = vec4(0.0, 0.5, 0.5, 1.0);
   float u = mix(texCoord.s, texCoord.p, a_localPosition.x * 0.5 + 0.5);
   float v = mix(texCoord.t, texCoord.q, a_localPosition.y * 0.5 + 0.5);
@@ -94,6 +95,7 @@ uniform float u_myUniform;
 attribute vec2 a_position;
 attribute vec2 a_localPosition;
 attribute vec2 a_hitColor;
+attribute float a_zIndex;
 
 varying vec2 v_texCoord;
 varying vec2 v_quadCoord;
@@ -124,7 +126,7 @@ void main(void) {
   float s = sin(-angle);
   offsetPx = vec2(c * offsetPx.x - s * offsetPx.y, s * offsetPx.x + c * offsetPx.y);
   vec4 center = u_projectionMatrix * vec4(a_position, 0.0, 1.0);
-  gl_Position = center + vec4(pxToScreen(offsetPx), u_depth, 0.);
+  gl_Position = center + vec4(pxToScreen(offsetPx), u_depth + a_zIndex / (1.0 + abs(a_zIndex)), 0.);
   vec4 texCoord = vec4(0.0, 0.5, 0.5, 1.0);
   float u = mix(texCoord.s, texCoord.p, a_localPosition.x * 0.5 + 0.5);
   float v = mix(texCoord.t, texCoord.q, a_localPosition.y * 0.5 + 0.5);
@@ -155,6 +157,7 @@ void main(void) {
 attribute vec2 a_position;
 attribute vec2 a_localPosition;
 attribute vec2 a_hitColor;
+attribute float a_zIndex;
 
 varying vec2 v_texCoord;
 varying vec2 v_quadCoord;
@@ -184,7 +187,7 @@ void main(void) {
   float s = sin(-angle);
   offsetPx = vec2(c * offsetPx.x - s * offsetPx.y, s * offsetPx.x + c * offsetPx.y);
   vec4 center = u_projectionMatrix * vec4(a_position, 0.0, 1.0);
-  gl_Position = center + vec4(pxToScreen(offsetPx), u_depth, 0.);
+  gl_Position = center + vec4(pxToScreen(offsetPx), u_depth + a_zIndex / (1.0 + abs(a_zIndex)), 0.);
   vec4 texCoord = vec4(0.0, 0.5, 0.5, 1.0);
   float u = mix(texCoord.s, texCoord.p, a_localPosition.x * 0.5 + 0.5);
   float v = mix(texCoord.t, texCoord.q, a_localPosition.y * 0.5 + 0.5);
@@ -214,6 +217,7 @@ void main(void) {
 attribute vec2 a_position;
 attribute vec2 a_localPosition;
 attribute vec2 a_hitColor;
+attribute float a_zIndex;
 
 varying vec2 v_texCoord;
 varying vec2 v_quadCoord;
@@ -243,7 +247,7 @@ void main(void) {
   float s = sin(-angle);
   offsetPx = vec2(c * offsetPx.x - s * offsetPx.y, s * offsetPx.x + c * offsetPx.y);
   vec4 center = u_projectionMatrix * vec4(a_position, 0.0, 1.0);
-  gl_Position = center + vec4(pxToScreen(offsetPx), u_depth, 0.);
+  gl_Position = center + vec4(pxToScreen(offsetPx), u_depth + a_zIndex / (1.0 + abs(a_zIndex)), 0.);
   vec4 texCoord = vec4(0.0, 0.0, 1.0, 1.0);
   float u = mix(texCoord.s, texCoord.p, a_localPosition.x * 0.5 + 0.5);
   float v = mix(texCoord.t, texCoord.q, a_localPosition.y * 0.5 + 0.5);
@@ -390,6 +394,7 @@ attribute float a_distanceLow;
 attribute float a_distanceHigh;
 attribute vec2 a_joinAngles;
 attribute vec2 a_hitColor;
+attribute float a_zIndex;
 
 varying vec2 v_segmentStartPx;
 varying vec2 v_segmentEndPx;
@@ -411,7 +416,7 @@ varying vec2 v_myAttr;
 
 vec4 pxToScreen(vec2 pxPos) {
   vec2 screenPos = 2.0 * pxPos / u_viewportSizePx - 1.0;
-  return vec4(screenPos, u_depth, 1.0);
+  return vec4(screenPos, u_depth + a_zIndex / (1.0 + abs(a_zIndex)), 1.0);
 }
 
 bool isCap(float joinAngle) {
@@ -691,6 +696,7 @@ void main(void) {
 uniform float u_myUniform;
 attribute vec2 a_position;
 attribute vec2 a_hitColor;
+attribute float a_zIndex;
 
 varying vec4 v_hitColor;
 varying vec2 v_patternOriginPx;
@@ -704,7 +710,7 @@ attribute vec2 a_myAttr;
 varying vec2 v_myAttr;
 
 void main(void) {
-  gl_Position = u_projectionMatrix * vec4(a_position, u_depth, 1.0);
+  gl_Position = u_projectionMatrix * vec4(a_position, u_depth + a_zIndex / (1.0 + abs(a_zIndex)), 1.0);
   v_hitColor = unpackColor(a_hitColor);
   v_patternOriginPx = vec2(0.);
   v_opacity = 0.4;
@@ -725,6 +731,7 @@ void main(void) {
 
 attribute vec2 a_position;
 attribute vec2 a_hitColor;
+attribute float a_zIndex;
 
 varying vec4 v_hitColor;
 varying vec2 v_patternOriginPx;
@@ -733,7 +740,7 @@ varying vec2 v_patternSizePx;
 
 
 void main(void) {
-  gl_Position = u_projectionMatrix * vec4(a_position, u_depth, 1.0);
+  gl_Position = u_projectionMatrix * vec4(a_position, u_depth + a_zIndex / (1.0 + abs(a_zIndex)), 1.0);
   v_hitColor = unpackColor(a_hitColor);
 
   // this computes the pattern offset in screenspace using double-float arithmetics
