@@ -19,168 +19,188 @@ buckets features by the resulting numeric value in `BuilderGroup`, and draws
 buckets in ascending order (`ExecutorGroup`) — a real painter's-algorithm
 sort, independent of which style/rule produced each feature.
 
-Goal: bring the WebGL renderer to the same observable behavior, as closely
-as the two renderers' architectures allow.
+Goal: bring the WebGL renderer to the same *visual* behavior for the common
+case, using an approach appropriate to the WebGL architecture, without
+requiring byte-for-byte identical output to Canvas in every case (see
+"Relaxed constraint" below).
 
-## Non-goals
+## Relaxed constraint (2026-08-20)
 
-- GPU depth-buffer-based ordering. Rejected: depth-testing discards occluded
-  fragments per-pixel rather than alpha-blending them in insertion order, so
-  it cannot reproduce Canvas's exact output for semi-transparent overlapping
-  features.
-- Per-feature draw calls / abandoning batching. True Canvas parity would
-  require interleaving individual features from different compiled GL
-  programs at the single-feature level when they tie on z-index, which is
-  not batchable. See "Known deviation" below.
+An earlier iteration of this design required exact parity with Canvas,
+including for semi-transparent overlapping features. That constraint has
+been relaxed in favor of a much simpler implementation: **GPU depth
+testing**. The two approaches considered were:
+
+- **Exact Canvas parity** (rejected as too complex): per-feature CPU
+  discovery of z-index values, a new uniform, and one draw call per distinct
+  z-index value per rule. Correct in all cases but adds a CPU discovery
+  pass, per-draw uniform bookkeeping, cache invalidation, and multiplies
+  draw-call count.
+- **GPU depth testing** (chosen): write z-index as a per-vertex depth value
+  and let the existing depth-test hardware decide per-pixel ordering. Simple
+  — reuses infrastructure that already exists in this codebase for
+  layer-level depth — but diverges from Canvas for semi-transparent
+  overlapping features. See "Difference from Canvas" below for the exact
+  behavioral diff.
+
+## Existing precedent for depth-based ordering
+
+This codebase already has a `u_depth` **uniform** used for *layer-level*
+z-ordering, which this design extends to *per-feature* granularity:
+
+- `ShaderBuilder.js:27` declares `uniform float u_depth;` in every vector
+  shader template.
+- `ShaderBuilder.js:612` (symbol/point), `:723` (also symbol-related), and
+  `:1009` (polygon/line, via `u_projectionMatrix * vec4(a_position, u_depth, 1.0)`)
+  all fold `u_depth` into `gl_Position.z`.
+- `TileLayer.js:275` and `VectorTileLayer.js:398,439` set this uniform via
+  `this.helper.setUniformFloatValue(Uniforms.DEPTH, depth)` (`Uniforms.DEPTH`
+  defined in `TileLayerBase.js:32`) to order whole layers relative to each
+  other.
+- Depth testing itself is already plumbed through
+  `WebGLHelper.prepareDraw(frameState, disableAlphaBlend, enableDepth)`
+  (`src/ol/webgl/Helper.js:568`), which enables `gl.DEPTH_TEST`/`gl.LEQUAL`
+  when `enableDepth` is truthy (`:598-600`) and clears the depth buffer every
+  frame (`:594`). `TileLayerBase.js:466` already calls this with
+  `enableDepth: true`. `WebGLVectorLayerRenderer.renderFrame`
+  (`src/ol/renderer/webgl/VectorLayer.js:406`) currently calls
+  `this.helper.prepareDraw(frameState)` with depth disabled — this is the
+  one line that needs to change to activate depth testing for vector
+  layers.
+
+Because `u_depth` is currently a per-draw-call *uniform* (constant for an
+entire layer), it cannot express per-feature ordering by itself. This
+design adds a second, per-vertex **attribute** carrying each feature's
+z-index, combined with `u_depth` in the vertex shader.
 
 ## Design
 
-**Architecture correction (2026-08-20):** an earlier draft of this section
-assumed each style rule gets its own buffer set that could be split by
-z-index bucket during generation. That is not how the renderer works.
-Reading `WebGLVectorLayerRenderer` (`src/ol/renderer/webgl/VectorLayer.js`)
-and `VectorStyleRenderer` (`src/ol/render/webgl/VectorStyleRenderer.js`)
-shows:
+### 1. Per-feature z-index attribute (CPU side)
 
-- There is exactly **one** `MixedGeometryBatch` (`this.batch_`,
-  `VectorLayer.js:177`) and **one** `VectorStyleRenderer` (`this.styleRenderer_`,
-  `:166`) per layer, holding **all** rules' render passes together.
-- `generateBuffers` (`VectorStyleRenderer.js:431`) builds exactly one shared
-  `polygonBuffers`/`lineStringBuffers`/`pointBuffers` set for the entire
-  layer, once — not once per rule. The actual per-feature iteration happens
-  inside a Web Worker (`generateBuffersForType_`, `:551`, dispatched via
-  `messageWorker`/`getWebGLWorker`), working on typed-array render
-  instructions built once for the whole batch.
-- `render()` (`:697`) replays that **same shared buffer** once per rule via
-  `this.renderPasses_` (`:698`), each rule's own compiled GL program
-  filtering out non-matching features with a GLSL `discard`
-  (`builder.setFragmentDiscardExpression`/`setShapeDiscardExpression`,
-  `style.js:1060/1062`) — not by having separate buffers per rule.
+- Add a new custom attribute, `zIndex`, using the exact mechanism already
+  used for the `hitColor` attribute (`VectorStyleRenderer.js:227-234`): a
+  `{callback, size: 1}` entry in `this.customAttributes_`, evaluated once
+  per feature while render instructions are generated
+  (`generateRenderInstructions_`, `VectorStyleRenderer.js:505`, and the
+  worker-side buffer generation it feeds). No new pass over the data — this
+  reuses the per-feature loop that already exists for every other custom
+  attribute.
+- The callback for a given feature evaluates that feature's matching rule's
+  `z-index` expression via `buildExpression(expr, NumberType, context)`
+  from `src/ol/expr/cpu.js` (the same evaluator Canvas uses,
+  `numberEvaluator` in `render/canvas/style.js` around line 294) — so
+  numeric coercion and the `0` default match Canvas exactly at the
+  per-feature-value level, even though final visual compositing does not
+  (see below). If a rule has no `z-index` key, its features get `0`
+  (unchanged from what `u_depth`'s default already implies today).
 
-So there is no per-rule, per-feature CPU loop over feature data to hook
-z-index bucketing into. The revised design below extends the existing
-"compile a boolean test to GLSL, discard non-matching instances" pattern
-instead of introducing new buffers.
+### 2. Squash into clip-space depth in the vertex shader
 
-### 1. Per-feature z-index evaluation (CPU side, for discovery only)
+- In each subpass's vertex shader (fill/stroke/symbol — the same three
+  places that currently reference `u_depth`, `ShaderBuilder.js:612/723/1009`),
+  combine the new `a_zIndex` attribute with the existing `u_depth` uniform:
+  `float depth = u_depth + a_zIndex / (1.0 + abs(a_zIndex));` and use
+  `depth` where `u_depth` is used today.
+- The `zIndex / (1.0 + abs(zIndex))` squash maps any real number to
+  `(-1, 1)` while preserving order, so no CPU-side discovery of the value
+  range is needed — unlike the rejected design, there is no bucketing step
+  at all.
+- Default case (no `z-index` set anywhere): every feature's `a_zIndex` is
+  `0`, squash is `0`, so `depth` reduces to `u_depth` exactly as today —
+  no behavior change for existing styles.
 
-- If a style rule has no `z-index` key, it is not evaluated at all — the
-  rule renders in a single draw call as today. No performance regression
-  for existing styles that don't use `z-index`.
-- If a rule declares `z-index`, build one CPU evaluator per rule via
-  `buildExpression(expr, NumberType, context)` from `src/ol/expr/cpu.js` —
-  the same evaluator Canvas uses (`numberEvaluator`, `render/canvas/style.js`
-  around line 294) — so numeric coercion and the `0` default match exactly.
-- This evaluator is run once per feature in the batch, **only to discover
-  the set of distinct z-index values** that occur among the rule's matching
-  features — it does not partition any buffers. Discovery reruns whenever
-  the batch changes (feature add/remove/change) or the style/variables
-  change, mirroring the existing buffer-regeneration triggers in
-  `WebGLVectorLayerRenderer.prepareFrameInternal` (`VectorLayer.js:478`).
-- The raw (un-parsed) `z-index` expression is already retained per rule via
-  `sourceRule` (`VectorStyleRenderer.js:260`, `styleShader.sourceRule.style`)
-  but not currently extracted; this design extracts and compiles it there.
+### 3. Enable depth testing for the vector layer
 
-### 2. GLSL z-index equality test, driven by a uniform
+- Change `WebGLVectorLayerRenderer.renderFrame`
+  (`src/ol/renderer/webgl/VectorLayer.js:406`) from
+  `this.helper.prepareDraw(frameState)` to pass `enableDepth: true` (third
+  argument), matching the existing `TileLayerBase.js:466` precedent.
+- `gl.depthFunc(LEQUAL)` (`Helper.js:600`) means that at equal depth (the
+  default, when no rule sets `z-index`), a later draw call still passes the
+  depth test and overwrites/blends as before — so enabling depth testing
+  unconditionally does not change output for styles that don't use
+  `z-index`. Ties between rules at an explicitly equal `z-index` are broken
+  by draw order (today's rule-array order), consistent with the tie-break
+  already agreed for the rejected design.
+- No changes to `VectorStyleRenderer.render()`'s loop structure, no new
+  uniforms set per draw call, no new draw calls. The only runtime cost is
+  one depth-buffer clear per frame (already paid by other layer types) and
+  one extra attribute per vertex.
 
-- Compile the rule's `z-index` expression to GLSL as well (it is already
-  parsed for validation only, in `parseTextProperties`, `style.js:1003` —
-  this design wires the result instead of discarding it), producing a GLSL
-  expression `zIndexExpr`.
-- Add a new uniform, `u_targetZIndex` (one per render pass), and extend each
-  render pass's discard condition from `!filterExpr` to
-  `!filterExpr || zIndexExpr != u_targetZIndex`. When a rule has no
-  `z-index`, `zIndexExpr` is the constant `0.0` and `u_targetZIndex` is
-  always set to `0` — this reduces to today's discard test unchanged.
-- This reuses the existing compiled program and the existing shared
-  buffers — no new buffer sets, no new programs. The only new runtime cost
-  is calling `helper.setUniformFloatValue('u_targetZIndex', value)`
-  (`src/ol/webgl/Helper.js:1079`, already used for other per-draw uniforms
-  such as zoom/rotation) before each draw call, and issuing one
-  `drawElements`/`drawElementsInstanced` call per distinct z-index value
-  instead of one per rule.
+### Bonus: hit detection respects z-order
 
-### 3. Draw units and global sort
+`WebGLVectorLayerRenderer.renderWorlds` (`VectorLayer.js:539`) replays the
+same render passes into a separate hit-detection render target
+(`this.hitRenderTarget_`) when `forHitDetection` is true. Enabling depth
+testing for that pass as well means `forEachFeatureAtCoordinate` will
+correctly report the topmost feature at a coordinate, which it does not
+today (currently whichever rule/feature happens to draw last "wins" at a
+given pixel, regardless of intended stacking).
 
-- A "draw unit" = one rule's compiled GL program (fill/stroke/symbol,
-  unchanged — still compiled once per rule, now with the extra
-  `u_targetZIndex` uniform) + one target z-index value from that rule's
-  discovered set. A rule with 3 distinct z-index values among its matching
-  features produces 3 draw units, all reusing the same program and the same
-  shared buffers.
-- `VectorStyleRenderer.render` currently does
-  `for (const renderPass of this.renderPasses_)` (`:698`). This is replaced
-  by: flatten all rules' draw units into one array, sort ascending by
-  z-index value, and render in that order, setting `u_targetZIndex` via
-  `renderInternal_`'s `preRenderCallback` hook (`:744`, called right before
-  `drawElements`/`drawElementsInstanced`) before each draw unit's call.
-  Ties are broken by rule declaration order (see "Known deviation").
-- No new GL program compilation is introduced; the sort only reorders which
-  already-compiled draw units run, and with which uniform value, in what
-  sequence per frame. The default case (no rule sets `z-index`) collapses
-  to exactly one draw call per rule with `u_targetZIndex` always `0` —
-  identical output and identical draw-call count to today.
+## Difference from Canvas (must be documented)
 
-### Known deviation from Canvas (must be documented)
-
-Canvas has no "rule" concept at draw time: every feature independently gets
-one z-index bucket, and within a bucket, draw order follows feature
-iteration order regardless of which style/rule produced it. WebGL compiles
-each style rule into its own GL program for performance batching, so true
-Canvas parity would require interleaving individual features from different
-programs at the single-feature level whenever two rules tie on z-index —
-not batchable without one draw call per feature.
-
-**Resolution:** WebGL matches Canvas exactly at the bucket (z-index value)
-level — this is the primary thing #16331 asks for. When multiple *different
-rules* tie at the same z-index value, WebGL breaks the tie by rule
-declaration order (today's existing behavior) rather than feature-render
-order. This means:
-
-- Default behavior (no rule sets `z-index`) is **unchanged** — all rules
-  default to `0`, tie-break is rule order, which is exactly today's output.
-- The existing workaround of ordering rules in the array (as suggested in
-  the issue thread) continues to work for the common case.
-- Only when two *different* rules both explicitly set the *same* non-default
-  z-index value does WebGL's order (rule order) diverge from what Canvas
-  would produce (feature-render order) for those tied features. This is a
-  narrow, documented deviation, not a silent inconsistency.
+- **Opaque or near-opaque styles** (the case in #16331 — a highlighted
+  stroke): visually identical to Canvas. The nearer feature simply wins
+  per-pixel via the depth test.
+- **Semi-transparent overlapping features at different z-index**: this is
+  the real divergence, and it is a general, well-known limitation of
+  combining alpha blending with depth testing (not specific to this
+  implementation). Canvas always alpha-composites every overlapping layer
+  back-to-front (true "src over dst" blending), so the overlap region shows
+  a blended mix of both colors. The depth-test approach shows **only the
+  nearer feature's color** in the overlap region — the farther,
+  semi-transparent feature is fully hidden there rather than partially
+  showing through blended. Styles that are opaque, or that don't rely on
+  stacked translucent overlays, are unaffected.
+- **Multi-world rendering** (map wrapping, `renderWorlds` looping over
+  `startWorld`/`endWorld`): world copies drawn in the same frame share one
+  depth buffer. If world copies ever visually overlap on screen (uncommon
+  in practice — they normally occupy distinct horizontal bands), depth
+  values could leak between them. Worth a quick check during
+  implementation; not expected to matter in practice.
 
 This must be documented in:
 - `changelog/upgrade-notes.md`, under Next Release.
-- The `z-index` JSDoc in `src/ol/style/flat.js` and/or WebGL renderer docs.
+- The `z-index` JSDoc in `src/ol/style/flat.js` and/or WebGL renderer docs,
+  explicitly calling out the semi-transparent-overlap divergence from
+  Canvas.
 
 ## Testing
 
 - Rendering-test fixtures (`test/rendering/cases/`) covering: no z-index set
-  (baseline unchanged, same draw-call count as today), single rule with
-  per-feature dynamic z-index (`['get', ...]`, producing multiple draw
-  units from one rule), multiple rules with distinct z-index values (global
-  sort interleaves them), multiple rules tied at the same explicit z-index
-  (documented tie-break by rule order).
-- Unit tests on `VectorStyleRenderer` for draw-unit construction: default
-  case (no z-index key → single draw unit, `u_targetZIndex` always `0`,
-  no CPU evaluator built), constant z-index literal (single draw unit at
-  that value), per-feature dynamic expression (multiple draw units, one per
-  distinct discovered value), and the global sort/tie-break ordering of
-  draw units across rules.
-- A GLSL-level check (or a rendering test exercising it) that the discard
-  condition correctly reduces to `!filterExpr` when `z-index` is absent,
-  and to `!filterExpr || zIndexExpr != u_targetZIndex` when present.
+  (baseline unchanged, byte-identical to today), single rule with
+  per-feature dynamic z-index (`['get', ...]`), multiple rules with distinct
+  z-index values (depth test interleaves them correctly regardless of rule
+  order), multiple rules tied at the same explicit z-index (documented
+  tie-break by rule/draw order), and one fixture with semi-transparent
+  overlapping features at different z-index to document/pin the accepted
+  Canvas divergence.
+- Unit tests on `VectorStyleRenderer` for the `zIndex` custom attribute:
+  default case (no z-index key → attribute value `0` for all features),
+  constant z-index literal, per-feature dynamic expression evaluating
+  correctly per feature.
+- A test confirming `WebGLVectorLayerRenderer` now calls
+  `prepareDraw(frameState, ..., true)` (depth enabled) where it previously
+  passed no third argument.
+- A hit-detection test confirming `forEachFeatureAtCoordinate` picks the
+  topmost feature by z-index at an overlapping coordinate.
 
 ## Files touched (expected)
 
-- `src/ol/render/webgl/VectorStyleRenderer.js` — CPU-side discovery of
-  distinct z-index values per rule, draw-unit list construction, global
-  sort, `render()` loop restructuring, per-draw-unit `u_targetZIndex`
-  uniform updates via the existing `preRenderCallback` hook.
-- `src/ol/render/webgl/style.js` — wire the `z-index` expression to GLSL
-  (currently parsed for validation only, in `parseTextProperties`,
-  `:1003`) and fold its equality test into the discard expression alongside
-  the existing filter (`:1051-1064`); add a CPU evaluator builder for the
-  same expression (via `ol/expr/cpu.js`) for the discovery step.
-- `src/ol/style/flat.js` — JSDoc update documenting the WebGL tie-break
-  deviation.
+- `src/ol/render/webgl/VectorStyleRenderer.js` — add the `zIndex` custom
+  attribute (mirroring the existing `hitColor` attribute at `:227-234`).
+- `src/ol/render/webgl/style.js` — wire the `z-index` expression into a CPU
+  evaluator (currently parsed for validation only, in `parseTextProperties`,
+  `:1003`), reusing `buildExpression` from `ol/expr/cpu.js`.
+- `src/ol/render/webgl/ShaderBuilder.js` — declare the new `a_zIndex`
+  attribute and combine it with `u_depth` at each `gl_Position` computation
+  (`:612`, `:723`, `:1009`).
+- `src/ol/renderer/webgl/VectorLayer.js` — enable depth testing:
+  `this.helper.prepareDraw(frameState, ..., true)` at `:406`; also verify
+  the hit-detection render path (`renderWorlds`, `:539`) benefits from the
+  same depth test.
+- `src/ol/style/flat.js` — JSDoc update documenting the semi-transparent
+  divergence from Canvas.
 - `changelog/upgrade-notes.md` — Next Release entry.
 - `test/rendering/cases/` — new fixtures.
 - Unit test file for `VectorStyleRenderer` (existing test file, extended).
